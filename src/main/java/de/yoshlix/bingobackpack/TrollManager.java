@@ -9,6 +9,8 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.animal.Chicken;
 import net.minecraft.world.item.ItemStack;
@@ -34,7 +36,8 @@ public class TrollManager {
     }
 
     public void tick(MinecraftServer server) {
-        if (!enabled) return;
+        if (!enabled)
+            return;
 
         if (cooldown > 0) {
             cooldown--;
@@ -72,7 +75,7 @@ public class TrollManager {
         double z = (random.nextDouble() - 0.5) * 0.4;
         player.push(x, y, z);
         player.hurtMarked = true;
-        player.serverLevel().sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, player.getX(), player.getY(),
+        ((ServerLevel) player.level()).sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, player.getX(), player.getY(),
                 player.getZ(), 12, 0.4, 0.2, 0.4, 0.02);
         player.sendSystemMessage(Component.literal("§6Wooosh! Raketenrucksack aktiviert."));
     }
@@ -85,16 +88,16 @@ public class TrollManager {
     }
 
     private void chickenHat(ServerPlayer player) {
-        ServerLevel level = player.serverLevel();
-        Chicken chicken = EntityType.CHICKEN.create(level);
+        ServerLevel level = (ServerLevel) player.level();
+        Chicken chicken = EntityType.CHICKEN.create(level, EntitySpawnReason.COMMAND);
         if (chicken != null) {
             chicken.setPos(player.getX(), player.getY() + CHICKEN_HAT_HEIGHT_OFFSET, player.getZ());
             chicken.setCustomName(Component.literal("§eHut-Huhn"));
             chicken.setCustomNameVisible(true);
             level.addFreshEntity(chicken);
-            boolean mounted = chicken.startRiding(player, true);
+            boolean mounted = chicken.startRiding(player, true, true);
             if (!mounted) {
-                mounted = player.startRiding(chicken, true);
+                mounted = player.startRiding(chicken, true, true);
             }
             if (mounted) {
                 player.sendSystemMessage(Component.literal("§eDein neuer Hut ist da!"));
@@ -131,15 +134,14 @@ public class TrollManager {
     }
 
     private void dizzySpell(ServerPlayer player) {
-        player.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 140, 0));
-        player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 80, 1));
+        player.addEffect(new MobEffectInstance(MobEffects.NAUSEA, 140, 0));
+        player.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 80, 1));
         player.sendSystemMessage(Component.literal("§5Dir wird ganz schwindelig..."));
     }
 
     private void surpriseSnack(ServerPlayer player) {
-        ItemStack snack = new ItemStack(Items.POTATO);
-        snack.setCount(3);
-        snack.setHoverName(Component.literal("§aMysteriöse Kartoffel"));
+        ItemStack snack = new ItemStack(Items.POTATO, 3);
+        snack.set(DataComponents.CUSTOM_NAME, Component.literal("§aMysteriöse Kartoffel"));
         if (!player.getInventory().add(snack)) {
             player.drop(snack, false);
         }
@@ -172,5 +174,6 @@ public class TrollManager {
         return INSTANCE;
     }
 
-    private TrollManager() {}
+    private TrollManager() {
+    }
 }
