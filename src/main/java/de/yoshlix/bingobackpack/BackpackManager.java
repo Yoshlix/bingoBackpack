@@ -119,7 +119,7 @@ public class BackpackManager {
         
         try {
             CompoundTag rootTag = NbtIo.readCompressed(backpackFile, NbtAccounter.unlimitedHeap());
-            ListTag listTag = rootTag.getList("Items"); // Updated API - only takes name parameter
+            ListTag listTag = rootTag.getList("Items", 10).orElseGet(ListTag::new);
             HolderLookup.Provider registries = server.registryAccess();
             
             for (int i = 0; i < listTag.size(); i++) {
