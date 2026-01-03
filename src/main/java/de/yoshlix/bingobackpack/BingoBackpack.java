@@ -3,6 +3,7 @@ package de.yoshlix.bingobackpack;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,12 +27,14 @@ public class BingoBackpack implements ModInitializer {
 		// Register commands
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 			BackpackCommand.register(dispatcher);
+			TrollCommand.register(dispatcher);
 		});
 
 		// Initialize managers when server starts
 		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
 			TeamManager.getInstance().init(server);
 			BackpackManager.getInstance().init(server);
+			TrollManager.getInstance().init(server);
 			LOGGER.info("BingoBackpack initialized!");
 		});
 
@@ -40,5 +43,8 @@ public class BingoBackpack implements ModInitializer {
 			BackpackManager.getInstance().saveAll();
 			LOGGER.info("BingoBackpack data saved!");
 		});
+
+		// Tick trolls
+		ServerTickEvents.END_SERVER_TICK.register(server -> TrollManager.getInstance().tick(server));
 	}
 }
