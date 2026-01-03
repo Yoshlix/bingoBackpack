@@ -127,7 +127,7 @@ public class BackpackManager {
                     itemTag.getInt("Slot").ifPresent(slot -> {
                         if (slot >= 0 && slot < container.getContainerSize()) {
                             itemTag.getCompound("Item").ifPresent(itemCompound -> {
-                                ItemStack stack = ItemStack.parseOptional(registries, itemCompound);
+                                ItemStack stack = ItemStack.parse(registries, itemCompound).orElse(ItemStack.EMPTY);
                                 container.setItem(slot, stack);
                             });
                         }
