@@ -126,9 +126,13 @@ public class TeamManager {
                 for (Map.Entry<String, Set<String>> entry : loadedTeams.entrySet()) {
                     Set<UUID> uuids = new HashSet<>();
                     for (String uuidStr : entry.getValue()) {
-                        UUID uuid = UUID.fromString(uuidStr);
-                        uuids.add(uuid);
-                        playerTeams.put(uuid, entry.getKey());
+                        try {
+                            UUID uuid = UUID.fromString(uuidStr);
+                            uuids.add(uuid);
+                            playerTeams.put(uuid, entry.getKey());
+                        } catch (IllegalArgumentException e) {
+                            BingoBackpack.LOGGER.warn("Invalid UUID '{}' in team '{}', skipping", uuidStr, entry.getKey());
+                        }
                     }
                     teams.put(entry.getKey(), uuids);
                 }
