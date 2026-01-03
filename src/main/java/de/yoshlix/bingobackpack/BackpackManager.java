@@ -97,7 +97,7 @@ public class BackpackManager {
                 if (!stack.isEmpty()) {
                     CompoundTag itemTag = new CompoundTag();
                     itemTag.putInt("Slot", i);
-                    itemTag.put("Item", stack.saveOptional(registries));
+                    itemTag.put("Item", stack.save(registries));
                     listTag.add(itemTag);
                 }
             }
