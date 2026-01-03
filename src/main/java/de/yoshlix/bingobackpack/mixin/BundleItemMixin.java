@@ -7,7 +7,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BundleItem;
 import net.minecraft.world.item.ItemStack;
@@ -22,32 +22,40 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class BundleItemMixin {
 
     @Inject(method = "use", at = @At("HEAD"), cancellable = true)
-    private void onUse(Level level, Player player, InteractionHand hand, CallbackInfoReturnable<InteractionResultHolder<ItemStack>> cir) {
+    private void onUse(Level level, Player player, InteractionHand hand, CallbackInfoReturnable<ItemInteractionResult> cir) {
         ItemStack stack = player.getItemInHand(hand);
         
         // Check if this is our special backpack bundle
         CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
         if (customData != null) {
             CompoundTag tag = customData.copyTag();
-            if (tag.getBoolean("bingobackpack_item")) {
-                // This is our backpack item
-                if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
-                    String teamName = tag.getString("team");
-                    
-                    // Verify player is still in the team
-                    String playerTeam = TeamManager.getInstance().getPlayerTeam(player.getUUID());
-                    if (playerTeam == null || !playerTeam.equals(teamName)) {
-                        serverPlayer.sendSystemMessage(Component.literal("§cYou are no longer in this team!"));
-                        cir.setReturnValue(InteractionResultHolder.fail(stack));
-                        return;
+            tag.getBoolean("bingobackpack_item").ifPresent(isBackpackItem -> {
+                if (isBackpackItem) {
+                    // This is our backpack item
+                    if (!level.isClientSide() && player instanceof ServerPlayer serverPlayer) {
+                        tag.getString("team").ifPresent(teamName -> {
+                            // Verify player is still in the team
+                            String playerTeam = TeamManager.getInstance().getPlayerTeam(player.getUUID());
+                            if (playerTeam == null || !playerTeam.equals(teamName)) {
+                                serverPlayer.sendSystemMessage(Component.literal("§cYou are no longer in this team!"));
+                                cir.setReturnValue(ItemInteractionResult.FAIL);
+                                return;
+                            }
+                            
+                            // Open the backpack
+                            BackpackManager.getInstance().openBackpack(serverPlayer, teamName);
+                            cir.setReturnValue(ItemInteractionResult.SUCCESS);
+                        });
+                        
+                        // If no team tag, still set success
+                        if (!tag.contains("team")) {
+                            cir.setReturnValue(ItemInteractionResult.SUCCESS);
+                        }
+                    } else {
+                        cir.setReturnValue(ItemInteractionResult.SUCCESS);
                     }
-                    
-                    // Open the backpack
-                    BackpackManager.getInstance().openBackpack(serverPlayer, teamName);
-                    cir.setReturnValue(InteractionResultHolder.success(stack));
                 }
-                cir.setReturnValue(InteractionResultHolder.sidedSuccess(stack, level.isClientSide));
-            }
+            });
         }
     }
 }

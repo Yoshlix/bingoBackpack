@@ -97,7 +97,7 @@ public class BackpackManager {
                 if (!stack.isEmpty()) {
                     CompoundTag itemTag = new CompoundTag();
                     itemTag.putInt("Slot", i);
-                    itemTag.put("Item", stack.save(registries));
+                    itemTag.put("Item", stack.saveOptional(registries));
                     listTag.add(itemTag);
                 }
             }
@@ -119,16 +119,20 @@ public class BackpackManager {
         
         try {
             CompoundTag rootTag = NbtIo.readCompressed(backpackFile, NbtAccounter.unlimitedHeap());
-            ListTag listTag = rootTag.getList("Items", 10); // 10 = CompoundTag
+            ListTag listTag = rootTag.getList("Items"); // Updated API - only takes name parameter
             HolderLookup.Provider registries = server.registryAccess();
             
             for (int i = 0; i < listTag.size(); i++) {
-                CompoundTag itemTag = listTag.getCompound(i);
-                int slot = itemTag.getInt("Slot");
-                if (slot >= 0 && slot < container.getContainerSize()) {
-                    ItemStack stack = ItemStack.parse(registries, itemTag.getCompound("Item")).orElse(ItemStack.EMPTY);
-                    container.setItem(slot, stack);
-                }
+                listTag.getCompound(i).ifPresent(itemTag -> {
+                    itemTag.getInt("Slot").ifPresent(slot -> {
+                        if (slot >= 0 && slot < container.getContainerSize()) {
+                            itemTag.getCompound("Item").ifPresent(itemCompound -> {
+                                ItemStack stack = ItemStack.parseOptional(registries, itemCompound);
+                                container.setItem(slot, stack);
+                            });
+                        }
+                    });
+                });
             }
         } catch (IOException e) {
             BingoBackpack.LOGGER.error("Failed to load backpack for team: " + teamName, e);
