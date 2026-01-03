@@ -44,12 +44,11 @@ public class BackpackManager {
 
     public void openBackpack(ServerPlayer player, String teamName) {
         SimpleContainer container = getOrCreateContainer(teamName);
-        
+
         player.openMenu(new SimpleMenuProvider(
-                (syncId, playerInventory, playerEntity) -> 
-                    new ChestMenu(MenuType.GENERIC_9x6, syncId, playerInventory, container, 6),
-                Component.literal("Team Backpack: " + teamName)
-        ));
+                (syncId, playerInventory, playerEntity) -> new ChestMenu(MenuType.GENERIC_9x6, syncId, playerInventory,
+                        container, 6),
+                Component.literal("Team Backpack: " + teamName)));
     }
 
     private SimpleContainer getOrCreateContainer(String teamName) {
@@ -85,25 +84,30 @@ public class BackpackManager {
     }
 
     private void saveContainer(Container container, String teamName) {
-        if (server == null || dataDir == null) return;
-        
+        if (server == null || dataDir == null)
+            return;
+
         try {
             CompoundTag rootTag = new CompoundTag();
             ListTag listTag = new ListTag();
             HolderLookup.Provider registries = server.registryAccess();
-            
+
             for (int i = 0; i < container.getContainerSize(); i++) {
                 ItemStack stack = container.getItem(i);
                 if (!stack.isEmpty()) {
                     CompoundTag itemTag = new CompoundTag();
                     itemTag.putInt("Slot", i);
-                    itemTag.put("Item", stack.save(registries));
+                    CompoundTag itemData = (CompoundTag) ItemStack.OPTIONAL_CODEC
+                            .encodeStart(registries.createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE),
+                                    stack)
+                            .getOrThrow();
+                    itemTag.put("Item", itemData);
                     listTag.add(itemTag);
                 }
             }
-            
+
             rootTag.put("Items", listTag);
-            
+
             Path backpackFile = dataDir.resolve(teamName + ".dat");
             NbtIo.writeCompressed(rootTag, backpackFile);
         } catch (IOException e) {
@@ -112,26 +116,30 @@ public class BackpackManager {
     }
 
     private void loadContainer(Container container, String teamName) {
-        if (server == null || dataDir == null) return;
-        
+        if (server == null || dataDir == null)
+            return;
+
         Path backpackFile = dataDir.resolve(teamName + ".dat");
-        if (!Files.exists(backpackFile)) return;
-        
+        if (!Files.exists(backpackFile))
+            return;
+
         try {
             CompoundTag rootTag = NbtIo.readCompressed(backpackFile, NbtAccounter.unlimitedHeap());
-            ListTag listTag = rootTag.getList("Items", 10).orElseGet(ListTag::new);
+            ListTag listTag = rootTag.getList("Items").orElse(new ListTag());
             HolderLookup.Provider registries = server.registryAccess();
-            
+
             for (int i = 0; i < listTag.size(); i++) {
                 listTag.getCompound(i).ifPresent(itemTag -> {
-                    itemTag.getInt("Slot").ifPresent(slot -> {
-                        if (slot >= 0 && slot < container.getContainerSize()) {
-                            itemTag.getCompound("Item").ifPresent(itemCompound -> {
-                                ItemStack stack = ItemStack.parse(registries, itemCompound).orElse(ItemStack.EMPTY);
-                                container.setItem(slot, stack);
-                            });
-                        }
-                    });
+                    int slot = itemTag.getInt("Slot").orElse(-1);
+                    if (slot >= 0 && slot < container.getContainerSize()) {
+                        itemTag.getCompound("Item").ifPresent(itemCompound -> {
+                            ItemStack stack = ItemStack.OPTIONAL_CODEC
+                                    .parse(registries.createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE),
+                                            itemCompound)
+                                    .result().orElse(ItemStack.EMPTY);
+                            container.setItem(slot, stack);
+                        });
+                    }
                 });
             }
         } catch (IOException e) {
@@ -171,5 +179,6 @@ public class BackpackManager {
         return instance;
     }
 
-    private BackpackManager() {}
+    private BackpackManager() {
+    }
 }
