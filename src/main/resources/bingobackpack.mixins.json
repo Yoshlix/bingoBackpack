@@ -3,7 +3,8 @@
 	"package": "de.yoshlix.bingobackpack.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
-		"ExampleMixin"
+		"HungerMixin",
+		"BundleItemMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

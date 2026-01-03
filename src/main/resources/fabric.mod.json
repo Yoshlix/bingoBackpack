@@ -3,31 +3,23 @@
 	"id": "bingobackpack",
 	"version": "${version}",
 	"name": "BingoBackpack",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"description": "A server-side backpack mod with team support. Access shared team backpacks via /backpack command or bundle item.",
 	"authors": [
-		"Me!"
+		"Yoshlix"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"sources": "https://github.com/Yoshlix/bingoBackpack"
 	},
 	"license": "CC0-1.0",
 	"icon": "assets/bingobackpack/icon.png",
-	"environment": "*",
+	"environment": "server",
 	"entrypoints": {
 		"main": [
 			"de.yoshlix.bingobackpack.BingoBackpack"
-		],
-		"client": [
-			"de.yoshlix.bingobackpack.BingoBackpackClient"
 		]
 	},
 	"mixins": [
-		"bingobackpack.mixins.json",
-		{
-			"config": "bingobackpack.client.mixins.json",
-			"environment": "client"
-		}
+		"bingobackpack.mixins.json"
 	],
 	"depends": {
 		"fabricloader": ">=0.18.4",
