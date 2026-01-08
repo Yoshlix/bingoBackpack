@@ -273,16 +273,16 @@ public class BackpackCommand {
 
     private static int createTeamWithPlayers(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         String teamName = StringArgumentType.getString(context, "teamname");
-        
+
         if (!TeamManager.getInstance().createTeam(teamName)) {
             context.getSource().sendFailure(Component.literal("Team '" + teamName + "' already exists!"));
             return 0;
         }
-        
+
         // Add all specified players to the team
         ServerPlayer player1 = EntityArgument.getPlayer(context, "player1");
         TeamManager.getInstance().addPlayerToTeam(teamName, player1.getUUID());
-        
+
         // Try to add optional players if they were specified
         try {
             ServerPlayer player2 = EntityArgument.getPlayer(context, "player2");
@@ -290,29 +290,32 @@ public class BackpackCommand {
         } catch (IllegalArgumentException e) {
             // player2 not specified, continue
         }
-        
+
         try {
             ServerPlayer player3 = EntityArgument.getPlayer(context, "player3");
             TeamManager.getInstance().addPlayerToTeam(teamName, player3.getUUID());
         } catch (IllegalArgumentException e) {
             // player3 not specified, continue
         }
-        
+
         try {
             ServerPlayer player4 = EntityArgument.getPlayer(context, "player4");
             TeamManager.getInstance().addPlayerToTeam(teamName, player4.getUUID());
         } catch (IllegalArgumentException e) {
             // player4 not specified, continue
         }
-        
+
         try {
             ServerPlayer player5 = EntityArgument.getPlayer(context, "player5");
             TeamManager.getInstance().addPlayerToTeam(teamName, player5.getUUID());
         } catch (IllegalArgumentException e) {
             // player5 not specified, continue
         }
-        
+
         Set<UUID> members = TeamManager.getInstance().getTeamMembers(teamName);
-        context.getSource().sendSuccess(() -> Component.literal("Team '" + teamName + "' created with " + members.size() + " member(s)!"), true);
+        context.getSource().sendSuccess(
+                () -> Component.literal("Team '" + teamName + "' created with " + members.size() + " member(s)!"),
+                true);
         return 1;
     }
+}
