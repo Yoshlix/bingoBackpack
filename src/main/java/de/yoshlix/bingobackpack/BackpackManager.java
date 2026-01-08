@@ -83,6 +83,25 @@ public class BackpackManager {
         }
     }
 
+    public void clearAllBackpacks() {
+        activeContainers.clear();
+        try {
+            if (Files.exists(dataDir)) {
+                Files.list(dataDir)
+                        .filter(path -> path.toString().endsWith(".dat"))
+                        .forEach(path -> {
+                            try {
+                                Files.deleteIfExists(path);
+                            } catch (IOException e) {
+                                BingoBackpack.LOGGER.error("Failed to delete backpack file: " + path, e);
+                            }
+                        });
+            }
+        } catch (IOException e) {
+            BingoBackpack.LOGGER.error("Failed to clear all backpacks", e);
+        }
+    }
+
     private void saveContainer(Container container, String teamName) {
         if (server == null || dataDir == null)
             return;

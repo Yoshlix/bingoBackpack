@@ -95,8 +95,15 @@ public class TeamManager {
         return teams.containsKey(teamName);
     }
 
+    public void resetAll() {
+        teams.clear();
+        playerTeams.clear();
+        save();
+    }
+
     private void save() {
-        if (dataPath == null) return;
+        if (dataPath == null)
+            return;
         try {
             // Convert UUID sets to String sets for JSON serialization
             Map<String, Set<String>> serializableTeams = new HashMap<>();
@@ -115,11 +122,13 @@ public class TeamManager {
     }
 
     private void load() {
-        if (dataPath == null || !Files.exists(dataPath)) return;
+        if (dataPath == null || !Files.exists(dataPath))
+            return;
         try {
             String json = Files.readString(dataPath);
             Map<String, Set<String>> loadedTeams = GSON.fromJson(json,
-                    new TypeToken<Map<String, Set<String>>>() {}.getType());
+                    new TypeToken<Map<String, Set<String>>>() {
+                    }.getType());
             if (loadedTeams != null) {
                 teams.clear();
                 playerTeams.clear();
@@ -131,7 +140,8 @@ public class TeamManager {
                             uuids.add(uuid);
                             playerTeams.put(uuid, entry.getKey());
                         } catch (IllegalArgumentException e) {
-                            BingoBackpack.LOGGER.warn("Invalid UUID '{}' in team '{}', skipping", uuidStr, entry.getKey());
+                            BingoBackpack.LOGGER.warn("Invalid UUID '{}' in team '{}', skipping", uuidStr,
+                                    entry.getKey());
                         }
                     }
                     teams.put(entry.getKey(), uuids);
@@ -152,5 +162,6 @@ public class TeamManager {
         return instance;
     }
 
-    private TeamManager() {}
+    private TeamManager() {
+    }
 }

@@ -26,54 +26,80 @@ public class BackpackCommand {
         dispatcher.register(Commands.literal("backpack")
                 // /backpack - Open backpack (for players in a team)
                 .executes(BackpackCommand::openBackpack)
-                
+
                 // /backpack get - Get the backpack bundle item
                 .then(Commands.literal("get")
                         .executes(BackpackCommand::getBackpackItem))
-                
+
                 // Team management commands (OP only)
                 .then(Commands.literal("team")
                         .requires(source -> source.hasPermission(2)) // OP level 2
-                        
+
                         // /backpack team create <name>
                         .then(Commands.literal("create")
                                 .then(Commands.argument("name", StringArgumentType.word())
                                         .executes(BackpackCommand::createTeam)))
-                        
+
                         // /backpack team delete <name>
                         .then(Commands.literal("delete")
                                 .then(Commands.argument("name", StringArgumentType.word())
                                         .suggests(BackpackCommand::suggestTeams)
                                         .executes(BackpackCommand::deleteTeam)))
-                        
+
                         // /backpack team add <team> <player>
                         .then(Commands.literal("add")
                                 .then(Commands.argument("team", StringArgumentType.word())
                                         .suggests(BackpackCommand::suggestTeams)
                                         .then(Commands.argument("player", EntityArgument.player())
                                                 .executes(BackpackCommand::addPlayerToTeam))))
-                        
+
                         // /backpack team remove <team> <player>
                         .then(Commands.literal("remove")
                                 .then(Commands.argument("team", StringArgumentType.word())
                                         .suggests(BackpackCommand::suggestTeams)
                                         .then(Commands.argument("player", EntityArgument.player())
                                                 .executes(BackpackCommand::removePlayerFromTeam))))
-                        
+
                         // /backpack team list
                         .then(Commands.literal("list")
                                 .executes(BackpackCommand::listTeams))
-                        
+
                         // /backpack team info <team>
                         .then(Commands.literal("info")
                                 .then(Commands.argument("team", StringArgumentType.word())
                                         .suggests(BackpackCommand::suggestTeams)
-                                        .executes(BackpackCommand::teamInfo)))
-                )
-        );
+                                        .executes(BackpackCommand::teamInfo))))
+
+                // Teams management commands (OP only) - bulk operations
+                .then(Commands.literal("teams")
+                        .requires(source -> source.hasPermission(2)) // OP level 2
+
+                        // /backpack teams reset - Delete all teams and backpacks
+                        .then(Commands.literal("reset")
+                                .executes(BackpackCommand::resetAllTeams))
+
+                        // /backpack teams create <teamname> <player1> <player2> ...
+                        .then(Commands.literal("create")
+                                .then(Commands.argument("teamname", StringArgumentType.word())
+                                        .then(Commands.argument("player1", EntityArgument.player())
+                                                .executes(BackpackCommand::createTeamWithPlayers)
+                                                .then(Commands.argument("player2", EntityArgument.player())
+                                                        .executes(BackpackCommand::createTeamWithPlayers)
+                                                        .then(Commands.argument("player3", EntityArgument.player())
+                                                                .executes(BackpackCommand::createTeamWithPlayers)
+                                                                .then(Commands
+                                                                        .argument("player4", EntityArgument.player())
+                                                                        .executes(
+                                                                                BackpackCommand::createTeamWithPlayers)
+                                                                        .then(Commands
+                                                                                .argument("player5",
+                                                                                        EntityArgument.player())
+                                                                                .executes(
+                                                                                        BackpackCommand::createTeamWithPlayers))))))))));
     }
 
-    private static CompletableFuture<Suggestions> suggestTeams(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
+    private static CompletableFuture<Suggestions> suggestTeams(CommandContext<CommandSourceStack> context,
+            SuggestionsBuilder builder) {
         Set<String> teams = TeamManager.getInstance().getAllTeams();
         for (String team : teams) {
             if (team.toLowerCase().startsWith(builder.getRemainingLowerCase())) {
@@ -86,13 +112,14 @@ public class BackpackCommand {
     private static int openBackpack(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
         UUID playerUUID = player.getUUID();
-        
+
         String teamName = TeamManager.getInstance().getPlayerTeam(playerUUID);
         if (teamName == null) {
-            context.getSource().sendFailure(Component.literal("You are not in a team! Ask an admin to add you to a team."));
+            context.getSource()
+                    .sendFailure(Component.literal("You are not in a team! Ask an admin to add you to a team."));
             return 0;
         }
-        
+
         BackpackManager.getInstance().openBackpack(player, teamName);
         return 1;
     }
@@ -100,35 +127,36 @@ public class BackpackCommand {
     private static int getBackpackItem(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
         UUID playerUUID = player.getUUID();
-        
+
         String teamName = TeamManager.getInstance().getPlayerTeam(playerUUID);
         if (teamName == null) {
-            context.getSource().sendFailure(Component.literal("You are not in a team! Ask an admin to add you to a team."));
+            context.getSource()
+                    .sendFailure(Component.literal("You are not in a team! Ask an admin to add you to a team."));
             return 0;
         }
-        
+
         // Create a special bundle item
         ItemStack bundle = new ItemStack(Items.BUNDLE);
         bundle.set(DataComponents.CUSTOM_NAME, Component.literal("§6Team Backpack: §e" + teamName));
-        
+
         // Add custom NBT to identify it as a backpack item
         net.minecraft.nbt.CompoundTag tag = new net.minecraft.nbt.CompoundTag();
         tag.putBoolean("bingobackpack_item", true);
         tag.putString("team", teamName);
         bundle.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
-        
+
         // Give item to player
         if (!player.getInventory().add(bundle)) {
             player.drop(bundle, false);
         }
-        
+
         context.getSource().sendSuccess(() -> Component.literal("You received the team backpack item!"), false);
         return 1;
     }
 
     private static int createTeam(CommandContext<CommandSourceStack> context) {
         String teamName = StringArgumentType.getString(context, "name");
-        
+
         if (TeamManager.getInstance().createTeam(teamName)) {
             context.getSource().sendSuccess(() -> Component.literal("Team '" + teamName + "' created!"), true);
             return 1;
@@ -140,7 +168,7 @@ public class BackpackCommand {
 
     private static int deleteTeam(CommandContext<CommandSourceStack> context) {
         String teamName = StringArgumentType.getString(context, "name");
-        
+
         if (TeamManager.getInstance().deleteTeam(teamName)) {
             context.getSource().sendSuccess(() -> Component.literal("Team '" + teamName + "' deleted!"), true);
             return 1;
@@ -153,14 +181,16 @@ public class BackpackCommand {
     private static int addPlayerToTeam(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         String teamName = StringArgumentType.getString(context, "team");
         ServerPlayer player = EntityArgument.getPlayer(context, "player");
-        
+
         if (!TeamManager.getInstance().teamExists(teamName)) {
             context.getSource().sendFailure(Component.literal("Team '" + teamName + "' does not exist!"));
             return 0;
         }
-        
+
         if (TeamManager.getInstance().addPlayerToTeam(teamName, player.getUUID())) {
-            context.getSource().sendSuccess(() -> Component.literal("Added " + player.getName().getString() + " to team '" + teamName + "'!"), true);
+            context.getSource().sendSuccess(
+                    () -> Component.literal("Added " + player.getName().getString() + " to team '" + teamName + "'!"),
+                    true);
             player.sendSystemMessage(Component.literal("You have been added to team '" + teamName + "'!"));
             return 1;
         } else {
@@ -172,46 +202,50 @@ public class BackpackCommand {
     private static int removePlayerFromTeam(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         String teamName = StringArgumentType.getString(context, "team");
         ServerPlayer player = EntityArgument.getPlayer(context, "player");
-        
+
         if (TeamManager.getInstance().removePlayerFromTeam(teamName, player.getUUID())) {
-            context.getSource().sendSuccess(() -> Component.literal("Removed " + player.getName().getString() + " from team '" + teamName + "'!"), true);
+            context.getSource().sendSuccess(
+                    () -> Component
+                            .literal("Removed " + player.getName().getString() + " from team '" + teamName + "'!"),
+                    true);
             player.sendSystemMessage(Component.literal("You have been removed from team '" + teamName + "'!"));
             return 1;
         } else {
-            context.getSource().sendFailure(Component.literal("Player is not in team '" + teamName + "' or team does not exist!"));
+            context.getSource()
+                    .sendFailure(Component.literal("Player is not in team '" + teamName + "' or team does not exist!"));
             return 0;
         }
     }
 
     private static int listTeams(CommandContext<CommandSourceStack> context) {
         Set<String> teams = TeamManager.getInstance().getAllTeams();
-        
+
         if (teams.isEmpty()) {
             context.getSource().sendSuccess(() -> Component.literal("No teams exist yet."), false);
             return 1;
         }
-        
+
         StringBuilder sb = new StringBuilder("§6Teams:\n");
         for (String team : teams) {
             int memberCount = TeamManager.getInstance().getTeamMembers(team).size();
             sb.append("§e- ").append(team).append(" §7(").append(memberCount).append(" members)\n");
         }
-        
+
         context.getSource().sendSuccess(() -> Component.literal(sb.toString()), false);
         return 1;
     }
 
     private static int teamInfo(CommandContext<CommandSourceStack> context) {
         String teamName = StringArgumentType.getString(context, "team");
-        
+
         if (!TeamManager.getInstance().teamExists(teamName)) {
             context.getSource().sendFailure(Component.literal("Team '" + teamName + "' does not exist!"));
             return 0;
         }
-        
+
         Set<UUID> members = TeamManager.getInstance().getTeamMembers(teamName);
         StringBuilder sb = new StringBuilder("§6Team: §e" + teamName + "\n§6Members:\n");
-        
+
         if (members.isEmpty()) {
             sb.append("§7(No members)");
         } else {
@@ -222,8 +256,63 @@ public class BackpackCommand {
                 sb.append("§e- ").append(playerName).append(" ").append(status).append("\n");
             }
         }
-        
+
         context.getSource().sendSuccess(() -> Component.literal(sb.toString()), false);
         return 1;
     }
-}
+
+    private static int resetAllTeams(CommandContext<CommandSourceStack> context) {
+        int teamCount = TeamManager.getInstance().getAllTeams().size();
+        TeamManager.getInstance().resetAll();
+        BackpackManager.getInstance().clearAllBackpacks();
+
+        context.getSource().sendSuccess(
+                () -> Component.literal("All " + teamCount + " teams and their backpacks have been deleted!"), true);
+        return 1;
+    }
+
+    private static int createTeamWithPlayers(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        String teamName = StringArgumentType.getString(context, "teamname");
+        
+        if (!TeamManager.getInstance().createTeam(teamName)) {
+            context.getSource().sendFailure(Component.literal("Team '" + teamName + "' already exists!"));
+            return 0;
+        }
+        
+        // Add all specified players to the team
+        ServerPlayer player1 = EntityArgument.getPlayer(context, "player1");
+        TeamManager.getInstance().addPlayerToTeam(teamName, player1.getUUID());
+        
+        // Try to add optional players if they were specified
+        try {
+            ServerPlayer player2 = EntityArgument.getPlayer(context, "player2");
+            TeamManager.getInstance().addPlayerToTeam(teamName, player2.getUUID());
+        } catch (IllegalArgumentException e) {
+            // player2 not specified, continue
+        }
+        
+        try {
+            ServerPlayer player3 = EntityArgument.getPlayer(context, "player3");
+            TeamManager.getInstance().addPlayerToTeam(teamName, player3.getUUID());
+        } catch (IllegalArgumentException e) {
+            // player3 not specified, continue
+        }
+        
+        try {
+            ServerPlayer player4 = EntityArgument.getPlayer(context, "player4");
+            TeamManager.getInstance().addPlayerToTeam(teamName, player4.getUUID());
+        } catch (IllegalArgumentException e) {
+            // player4 not specified, continue
+        }
+        
+        try {
+            ServerPlayer player5 = EntityArgument.getPlayer(context, "player5");
+            TeamManager.getInstance().addPlayerToTeam(teamName, player5.getUUID());
+        } catch (IllegalArgumentException e) {
+            // player5 not specified, continue
+        }
+        
+        Set<UUID> members = TeamManager.getInstance().getTeamMembers(teamName);
+        context.getSource().sendSuccess(() -> Component.literal("Team '" + teamName + "' created with " + members.size() + " member(s)!"), true);
+        return 1;
+    }
