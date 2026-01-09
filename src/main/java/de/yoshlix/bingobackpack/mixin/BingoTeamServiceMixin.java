@@ -3,6 +3,7 @@ package de.yoshlix.bingobackpack.mixin;
 import de.yoshlix.bingobackpack.BingoIntegration;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
@@ -17,12 +18,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class BingoTeamServiceMixin {
 
     @Inject(method = "joinTeam(Lme/jfenn/bingo/platform/IPlayerHandle;Lme/jfenn/bingo/common/team/BingoTeam;)V", at = @At("TAIL"), remap = false)
-    private void bingoBackpack$afterJoinTeam(Object playerHandle, Object bingoTeam, CallbackInfo ci) {
+    private void bingoBackpack$afterJoinTeam(@Coerce Object playerHandle, @Coerce Object bingoTeam, CallbackInfo ci) {
         BingoIntegration.getInstance().manualSync();
     }
 
     @Inject(method = "joinSpectators(Lme/jfenn/bingo/platform/IPlayerHandle;)V", at = @At("TAIL"), remap = false)
-    private void bingoBackpack$afterJoinSpectators(Object playerHandle, CallbackInfo ci) {
+    private void bingoBackpack$afterJoinSpectators(@Coerce Object playerHandle, CallbackInfo ci) {
         BingoIntegration.getInstance().manualSync();
     }
 }
