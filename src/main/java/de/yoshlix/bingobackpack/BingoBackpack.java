@@ -35,6 +35,7 @@ public class BingoBackpack implements ModInitializer {
 			TeamManager.getInstance().init(server);
 			BackpackManager.getInstance().init(server);
 			TrollManager.getInstance().init(server);
+			BingoIntegration.getInstance().init(server);
 			LOGGER.info("BingoBackpack initialized!");
 		});
 
@@ -44,7 +45,10 @@ public class BingoBackpack implements ModInitializer {
 			LOGGER.info("BingoBackpack data saved!");
 		});
 
-		// Tick trolls
-		ServerTickEvents.END_SERVER_TICK.register(server -> TrollManager.getInstance().tick(server));
+		// Tick trolls and bingo integration
+		ServerTickEvents.END_SERVER_TICK.register(server -> {
+			TrollManager.getInstance().tick(server);
+			BingoIntegration.getInstance().tick(server);
+		});
 	}
 }

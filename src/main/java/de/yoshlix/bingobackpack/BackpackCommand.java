@@ -35,10 +35,25 @@ public class BackpackCommand {
                 .then(Commands.literal("team")
                         .requires(source -> source.hasPermission(2)) // OP level 2
 
-                        // /backpack team create <name>
+                        // /backpack team create <name> [player1] [player2] ...
                         .then(Commands.literal("create")
                                 .then(Commands.argument("name", StringArgumentType.word())
-                                        .executes(BackpackCommand::createTeam)))
+                                        .executes(BackpackCommand::createTeam)
+                                        .then(Commands.argument("player1", EntityArgument.player())
+                                                .executes(BackpackCommand::createTeamWithPlayers)
+                                                .then(Commands.argument("player2", EntityArgument.player())
+                                                        .executes(BackpackCommand::createTeamWithPlayers)
+                                                        .then(Commands.argument("player3", EntityArgument.player())
+                                                                .executes(BackpackCommand::createTeamWithPlayers)
+                                                                .then(Commands
+                                                                        .argument("player4", EntityArgument.player())
+                                                                        .executes(
+                                                                                BackpackCommand::createTeamWithPlayers)
+                                                                        .then(Commands
+                                                                                .argument("player5",
+                                                                                        EntityArgument.player())
+                                                                                .executes(
+                                                                                        BackpackCommand::createTeamWithPlayers))))))))
 
                         // /backpack team delete <name>
                         .then(Commands.literal("delete")
@@ -68,34 +83,22 @@ public class BackpackCommand {
                         .then(Commands.literal("info")
                                 .then(Commands.argument("team", StringArgumentType.word())
                                         .suggests(BackpackCommand::suggestTeams)
-                                        .executes(BackpackCommand::teamInfo))))
+                                        .executes(BackpackCommand::teamInfo)))
 
-                // Teams management commands (OP only) - bulk operations
-                .then(Commands.literal("teams")
-                        .requires(source -> source.hasPermission(2)) // OP level 2
-
-                        // /backpack teams reset - Delete all teams and backpacks
+                        // /backpack team reset - Delete all teams and backpacks
                         .then(Commands.literal("reset")
                                 .executes(BackpackCommand::resetAllTeams))
 
-                        // /backpack teams create <teamname> <player1> <player2> ...
-                        .then(Commands.literal("create")
-                                .then(Commands.argument("teamname", StringArgumentType.word())
-                                        .then(Commands.argument("player1", EntityArgument.player())
-                                                .executes(BackpackCommand::createTeamWithPlayers)
-                                                .then(Commands.argument("player2", EntityArgument.player())
-                                                        .executes(BackpackCommand::createTeamWithPlayers)
-                                                        .then(Commands.argument("player3", EntityArgument.player())
-                                                                .executes(BackpackCommand::createTeamWithPlayers)
-                                                                .then(Commands
-                                                                        .argument("player4", EntityArgument.player())
-                                                                        .executes(
-                                                                                BackpackCommand::createTeamWithPlayers)
-                                                                        .then(Commands
-                                                                                .argument("player5",
-                                                                                        EntityArgument.player())
-                                                                                .executes(
-                                                                                        BackpackCommand::createTeamWithPlayers))))))))));
+                        // /backpack team sync - Manual sync with scoreboard teams (Bingo integration)
+                        .then(Commands.literal("sync")
+                                .executes(BackpackCommand::syncTeams))
+
+                        // /backpack team autosync <on|off> - Toggle automatic sync
+                        .then(Commands.literal("autosync")
+                                .then(Commands.literal("on")
+                                        .executes(ctx -> setAutoSync(ctx, true)))
+                                .then(Commands.literal("off")
+                                        .executes(ctx -> setAutoSync(ctx, false))))));
     }
 
     private static CompletableFuture<Suggestions> suggestTeams(CommandContext<CommandSourceStack> context,
@@ -272,7 +275,7 @@ public class BackpackCommand {
     }
 
     private static int createTeamWithPlayers(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-        String teamName = StringArgumentType.getString(context, "teamname");
+        String teamName = StringArgumentType.getString(context, "name");
 
         if (!TeamManager.getInstance().createTeam(teamName)) {
             context.getSource().sendFailure(Component.literal("Team '" + teamName + "' already exists!"));
@@ -316,6 +319,25 @@ public class BackpackCommand {
         context.getSource().sendSuccess(
                 () -> Component.literal("Team '" + teamName + "' created with " + members.size() + " member(s)!"),
                 true);
+        return 1;
+    }
+
+    private static int syncTeams(CommandContext<CommandSourceStack> context) {
+        int teamCount = BingoIntegration.getInstance().manualSync();
+        context.getSource().sendSuccess(
+                () -> Component.literal("§aSynced with scoreboard teams! Found " + teamCount + " teams."), true);
+        return 1;
+    }
+
+    private static int setAutoSync(CommandContext<CommandSourceStack> context, boolean enabled) {
+        BingoIntegration.getInstance().setEnabled(enabled);
+        if (enabled) {
+            context.getSource().sendSuccess(
+                    () -> Component.literal("§aAutomatic team sync enabled! Teams will sync with scoreboard."), true);
+        } else {
+            context.getSource().sendSuccess(
+                    () -> Component.literal("§cAutomatic team sync disabled."), true);
+        }
         return 1;
     }
 }

@@ -8,7 +8,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.SlotAccess;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.ClickAction;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.BundleItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
@@ -27,12 +30,12 @@ public class BundleItemMixin {
         ItemStack stack = player.getItemInHand(hand);
 
         // Check if this is our special backpack bundle
-        CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
-        if (customData != null) {
-            CompoundTag tag = customData.copyTag();
-            if (tag.contains("bingobackpack_item") && tag.getBoolean("bingobackpack_item").orElse(false)) {
-                // This is our backpack item
-                if (!level.isClientSide() && player instanceof ServerPlayer serverPlayer) {
+        if (isBackpackBundle(stack)) {
+            // This is our backpack item
+            if (!level.isClientSide() && player instanceof ServerPlayer serverPlayer) {
+                CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+                if (customData != null) {
+                    CompoundTag tag = customData.copyTag();
                     if (tag.contains("team")) {
                         String teamName = tag.getString("team").orElse("");
                         // Verify player is still in the team
@@ -49,10 +52,39 @@ public class BundleItemMixin {
                     } else {
                         cir.setReturnValue(InteractionResult.SUCCESS);
                     }
-                } else {
-                    cir.setReturnValue(InteractionResult.SUCCESS);
                 }
+            } else {
+                cir.setReturnValue(InteractionResult.SUCCESS);
             }
         }
+    }
+
+    // Prevent adding items to the backpack bundle via clicking in inventory
+    @Inject(method = "overrideStackedOnOther", at = @At("HEAD"), cancellable = true)
+    private void onOverrideStackedOnOther(ItemStack bundle, Slot slot, ClickAction action, Player player,
+            CallbackInfoReturnable<Boolean> cir) {
+        if (isBackpackBundle(bundle)) {
+            // Cancel the default bundle behavior - don't allow adding items
+            cir.setReturnValue(false);
+        }
+    }
+
+    // Prevent adding items to the backpack bundle via clicking on the bundle
+    @Inject(method = "overrideOtherStackedOnMe", at = @At("HEAD"), cancellable = true)
+    private void onOverrideOtherStackedOnMe(ItemStack bundle, ItemStack other, Slot slot, ClickAction action,
+            Player player, SlotAccess access, CallbackInfoReturnable<Boolean> cir) {
+        if (isBackpackBundle(bundle)) {
+            // Cancel the default bundle behavior - don't allow adding items
+            cir.setReturnValue(false);
+        }
+    }
+
+    private static boolean isBackpackBundle(ItemStack stack) {
+        CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+        if (customData != null) {
+            CompoundTag tag = customData.copyTag();
+            return tag.contains("bingobackpack_item") && tag.getBoolean("bingobackpack_item").orElse(false);
+        }
+        return false;
     }
 }
