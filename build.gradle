@@ -16,6 +16,13 @@ repositories {
 	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
 	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
 	// for more information about repositories.
+	maven {
+		name = "Yet Another Bingo"
+		url = "https://gitlab.com/api/v4/projects/48318565/packages/maven"
+		content {
+			includeGroup("me.jfenn.bingo")
+		}
+	}
 }
 
 loom {
@@ -36,6 +43,7 @@ dependencies {
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 	
+	modImplementation "me.jfenn.bingo:api:2.9.5"
 }
 
 processResources {

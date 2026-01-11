@@ -1,5 +1,6 @@
 package de.yoshlix.bingobackpack;
 
+import net.minecraft.client.multiplayer.chat.LoggedChatMessage.Player;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -12,6 +13,9 @@ import net.minecraft.world.scores.Scoreboard;
 
 import java.util.*;
 
+import me.jfenn.bingo.api.BingoApi;
+import me.jfenn.bingo.api.data.BingoGameStatus;
+
 /**
  * Integration with Bingo mods that use Minecraft's scoreboard teams.
  * This will automatically sync scoreboard teams to backpack teams
@@ -22,6 +26,7 @@ public class BingoIntegration {
 
     private MinecraftServer server;
     private boolean enabled = true;
+    private boolean backpackGiven = false;
 
     // Track which players have already received their backpack for their current
     // team
@@ -66,6 +71,20 @@ public class BingoIntegration {
         tickCounter = 0;
 
         syncScoreboardTeams();
+
+        if (!backpackGiven && BingoApi.getGame().getStatus().equals(BingoGameStatus.PLAYING)) {
+            for (PlayerTeam scoPlayerTeam : server.getScoreboard().getPlayerTeams()) {
+                for (String name : scoPlayerTeam.getPlayers()) {
+                    ServerPlayer player = server.getPlayerList().getPlayerByName(name);
+                    giveBackpackToPlayer(player, scoPlayerTeam.getName());
+                }
+            }
+            backpackGiven = true;
+        }
+
+        if (BingoApi.getGame().getStatus().equals(BingoGameStatus.POSTGAME)) {
+            backpackGiven = false;
+        }
     }
 
     /**
@@ -112,7 +131,7 @@ public class BingoIntegration {
                 if (player != null) {
                     String backpackTeam = playersWithBackpack.get(playerUUID);
                     if (!teamName.equals(backpackTeam)) {
-                        giveBackpackToPlayer(player, teamName);
+                        // giveBackpackToPlayer(player, teamName);
                         playersWithBackpack.put(playerUUID, teamName);
                     }
                 }
