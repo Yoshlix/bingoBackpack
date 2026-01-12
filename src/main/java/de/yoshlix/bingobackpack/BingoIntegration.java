@@ -78,6 +78,13 @@ public class BingoIntegration {
                     giveBackpackToPlayer(player, scoPlayerTeam.getName());
                 }
             }
+
+            if (ModConfig.getInstance().spawnTeleportEnabled) {
+                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                    SpawnManager.getInstance().setSpawn(player);
+                }
+            }
+
             backpackGiven = true;
         }
 

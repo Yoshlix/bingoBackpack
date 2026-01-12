@@ -23,6 +23,7 @@ public class BingoBackpack implements ModInitializer {
 		// Register commands
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 			BackpackCommand.register(dispatcher);
+			TeleportToSpawnCommand.register(dispatcher);
 		});
 
 		// Initialize managers when server starts
@@ -30,6 +31,7 @@ public class BingoBackpack implements ModInitializer {
 			TeamManager.getInstance().init(server);
 			BackpackManager.getInstance().init(server);
 			BingoIntegration.getInstance().init(server);
+			SpawnManager.getInstance().init(server);
 			LOGGER.info("BingoBackpack initialized!");
 		});
 
