@@ -75,7 +75,9 @@ public class BingoIntegration {
             for (PlayerTeam scoPlayerTeam : server.getScoreboard().getPlayerTeams()) {
                 for (String name : scoPlayerTeam.getPlayers()) {
                     ServerPlayer player = server.getPlayerList().getPlayerByName(name);
-                    giveBackpackToPlayer(player, scoPlayerTeam.getName());
+                    if (player != null) {
+                        giveBackpackToPlayer(player, scoPlayerTeam.getName());
+                    }
                 }
             }
 

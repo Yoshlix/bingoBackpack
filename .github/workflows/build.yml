@@ -1,4 +1,4 @@
-name: Build Minecraft Mod
+name: Build and Release Minecraft Mod
 
 on:
   push:
@@ -11,11 +11,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
       
     - name: Set up JDK 21
       uses: actions/setup-java@v4
@@ -28,6 +30,14 @@ jobs:
       
     - name: Make gradlew executable
       run: chmod +x ./gradlew
+
+    - name: Get mod version
+      id: get_version
+      run: |
+        MOD_VERSION=$(grep -E '^mod_version=' gradle.properties | cut -d'=' -f2)
+        MC_VERSION=$(grep -E '^minecraft_version=' gradle.properties | cut -d'=' -f2)
+        echo "mod_version=$MOD_VERSION" >> $GITHUB_OUTPUT
+        echo "minecraft_version=$MC_VERSION" >> $GITHUB_OUTPUT
       
     - name: Build with Gradle
       run: ./gradlew build --no-daemon
@@ -39,3 +49,63 @@ jobs:
         name: minecraft-mod
         path: build/libs/*.jar
         retention-days: 30
+
+    - name: Generate Changelog
+      id: changelog
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+      run: |
+        # Get the previous tag or use initial commit
+        PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+        
+        echo "## 🎮 BingoBackpack v${{ steps.get_version.outputs.mod_version }}" > CHANGELOG.md
+        echo "" >> CHANGELOG.md
+        echo "**Minecraft Version:** ${{ steps.get_version.outputs.minecraft_version }}" >> CHANGELOG.md
+        echo "**Mod Version:** ${{ steps.get_version.outputs.mod_version }}" >> CHANGELOG.md
+        echo "**Build:** #${{ github.run_number }}" >> CHANGELOG.md
+        echo "" >> CHANGELOG.md
+        
+        if [ -n "$PREVIOUS_TAG" ]; then
+          echo "### 📝 Changes since $PREVIOUS_TAG" >> CHANGELOG.md
+        else
+          echo "### 📝 Recent Changes" >> CHANGELOG.md
+        fi
+        echo "" >> CHANGELOG.md
+        
+        # Get commits since last tag or last 10 commits
+        if [ -n "$PREVIOUS_TAG" ]; then
+          COMMITS=$(git log $PREVIOUS_TAG..HEAD --pretty=format:"- %s (%h)" 2>/dev/null || echo "")
+        else
+          COMMITS=$(git log --pretty=format:"- %s (%h)" -10 2>/dev/null || echo "")
+        fi
+        
+        if [ -n "$COMMITS" ]; then
+          echo "$COMMITS" >> CHANGELOG.md
+        else
+          echo "- Initial release" >> CHANGELOG.md
+        fi
+        
+        echo "" >> CHANGELOG.md
+        echo "" >> CHANGELOG.md
+        echo "---" >> CHANGELOG.md
+        echo "📦 **Installation:** Place the JAR file in your \`mods\` folder." >> CHANGELOG.md
+
+    - name: Delete old release
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+      run: gh release delete latest --yes || true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Create Release
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: latest
+        name: BingoBackpack v${{ steps.get_version.outputs.mod_version }} (Build #${{ github.run_number }})
+        body_path: CHANGELOG.md
+        draft: false
+        prerelease: false
+        files: |
+          build/libs/*.jar
+        make_latest: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
