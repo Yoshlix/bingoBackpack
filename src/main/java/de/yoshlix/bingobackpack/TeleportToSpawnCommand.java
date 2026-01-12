@@ -4,6 +4,8 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 
+import me.jfenn.bingo.api.BingoApi;
+import me.jfenn.bingo.api.data.BingoGameStatus;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -16,6 +18,9 @@ public class TeleportToSpawnCommand {
     }
 
     private static int teleportToSpawn(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        if (BingoApi.getGame().getStatus() != BingoGameStatus.PLAYING)
+            return 0;
+
         ServerPlayer player = context.getSource().getPlayerOrException();
 
         boolean success = SpawnManager.getInstance().teleportToSpawn(player);
