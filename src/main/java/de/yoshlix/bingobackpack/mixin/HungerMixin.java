@@ -7,6 +7,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import de.yoshlix.bingobackpack.ModConfig;
+
 @Mixin(FoodData.class)
 public class HungerMixin {
     @Shadow
@@ -20,6 +22,10 @@ public class HungerMixin {
 
     @Inject(method = "tick", at = @At("HEAD"))
     private void onTick(CallbackInfo ci) {
+
+        if (!ModConfig.getInstance().hungerMixinEnabled)
+            return;
+
         // Only update if values are not already at max to avoid unnecessary operations
         if (this.foodLevel != 20) {
             this.foodLevel = 20;

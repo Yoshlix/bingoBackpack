@@ -1,6 +1,5 @@
 package de.yoshlix.bingobackpack;
 
-import net.minecraft.client.multiplayer.chat.LoggedChatMessage.Player;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;

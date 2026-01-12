@@ -31,6 +31,21 @@ public class BackpackCommand {
                 .then(Commands.literal("get")
                         .executes(BackpackCommand::getBackpackItem))
 
+                .then(Commands.literal("config")
+                        .requires(source -> source.hasPermission(2))
+                        .then(Commands.literal("hunger")
+                                .then(Commands.literal("on")
+                                        .executes(ctx -> toggleConfig(ctx, "hunger", true)))
+                                .then(Commands.literal("off")
+                                        .executes(ctx -> toggleConfig(ctx, "hunger", false)))))
+                .then(Commands.literal("spawn")
+                        .then(Commands.literal("on")
+                                .executes(ctx -> toggleConfig(ctx, "spawn", true)))
+                        .then(Commands.literal("off")
+                                .executes(ctx -> toggleConfig(ctx, "spawn", false))))
+                .then(Commands.literal("status")
+                        .executes(BackpackCommand::mixinStatus))
+
                 // Team management commands (OP only)
                 .then(Commands.literal("team")
                         .requires(source -> source.hasPermission(2)) // OP level 2
@@ -99,6 +114,7 @@ public class BackpackCommand {
                                         .executes(ctx -> setAutoSync(ctx, true)))
                                 .then(Commands.literal("off")
                                         .executes(ctx -> setAutoSync(ctx, false))))));
+
     }
 
     private static CompletableFuture<Suggestions> suggestTeams(CommandContext<CommandSourceStack> context,
@@ -338,6 +354,41 @@ public class BackpackCommand {
             context.getSource().sendSuccess(
                     () -> Component.literal("§cAutomatic team sync disabled."), true);
         }
+        return 1;
+    }
+
+    private static int toggleConfig(CommandContext<CommandSourceStack> ctx, String configName, boolean value) {
+        ModConfig config = ModConfig.getInstance();
+
+        switch (configName.toLowerCase()) {
+            case "hunger":
+                config.hungerMixinEnabled = value;
+                break;
+            case "spawn":
+                config.spawnTeleportEnabled = value;
+                break;
+            default:
+                ctx.getSource().sendFailure(Component.literal("Unknown config flag: " + configName));
+                return 0;
+        }
+
+        ModConfig.save(net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir());
+
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "§a" + configName + " mixin " + (value ? "enabled" : "disabled")), true);
+
+        return 1;
+    }
+
+    private static int mixinStatus(CommandContext<CommandSourceStack> ctx) {
+        ModConfig config = ModConfig.getInstance();
+
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "§6Config Status:\n" +
+                        "§7- Hunger: " + (config.hungerMixinEnabled ? "§aEnabled" : "§cDisabled") + "\n" +
+                        "§7- Spawn Teleport: " + (config.spawnTeleportEnabled ? "§aEnabled" : "§cDisabled")),
+                false);
+
         return 1;
     }
 }
