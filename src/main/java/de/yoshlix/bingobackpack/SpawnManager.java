@@ -13,7 +13,7 @@ import com.google.gson.reflect.TypeToken;
 
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -37,7 +37,7 @@ public class SpawnManager {
         if (s == null || server == null)
             return false;
 
-        var levelKey = ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(s.dimension));
+        var levelKey = ResourceKey.create(Registries.DIMENSION, Identifier.parse(s.dimension));
         ServerLevel level = server.getLevel(levelKey);
         if (level == null)
             return false;
@@ -96,7 +96,7 @@ public class SpawnManager {
 
         public static SpawnPoint from(ServerPlayer p) {
             SpawnPoint s = new SpawnPoint();
-            s.dimension = p.level().dimension().location().toString();
+            s.dimension = p.level().dimension().identifier().toString();
             s.x = p.getX();
             s.y = p.getY();
             s.z = p.getZ();

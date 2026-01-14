@@ -32,7 +32,7 @@ public class BackpackCommand {
                         .executes(BackpackCommand::getBackpackItem))
 
                 .then(Commands.literal("config")
-                        .requires(source -> source.hasPermission(2))
+                        .requires(source -> Commands.hasPermission(Commands.LEVEL_GAMEMASTERS).test(source))
                         .then(Commands.literal("hunger")
                                 .then(Commands.literal("on")
                                         .executes(ctx -> toggleConfig(ctx, "hunger", true)))
@@ -48,7 +48,8 @@ public class BackpackCommand {
 
                 // Team management commands (OP only)
                 .then(Commands.literal("team")
-                        .requires(source -> source.hasPermission(2)) // OP level 2
+                        .requires(source -> Commands.hasPermission(Commands.LEVEL_GAMEMASTERS).test(source)) // OP level
+                                                                                                             // 2
 
                         // /backpack team create <name> [player1] [player2] ...
                         .then(Commands.literal("create")
