@@ -3,6 +3,7 @@ package de.yoshlix.bingobackpack.item.items;
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
 import me.jfenn.bingo.api.BingoApi;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -93,15 +94,18 @@ public class ItemSwap extends BingoItem {
 
         for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
             ItemStack stack = player.getInventory().getItem(i);
-            // Skip this item
+            // Skip this item and unbreakable items (starter kit)
             var bingoItem = de.yoshlix.bingobackpack.item.BingoItemRegistry.fromItemStack(stack);
-            if (!stack.isEmpty() && (bingoItem.isEmpty() || !bingoItem.get().getId().equals("item_swap"))) {
+            if (!stack.isEmpty() && !isUnbreakable(stack)
+                    && (bingoItem.isEmpty() || !bingoItem.get().getId().equals("item_swap"))) {
                 playerNonEmptySlots.add(i);
             }
         }
 
         for (int i = 0; i < target.getInventory().getContainerSize(); i++) {
-            if (!target.getInventory().getItem(i).isEmpty()) {
+            ItemStack stack = target.getInventory().getItem(i);
+            // Skip unbreakable items (starter kit)
+            if (!stack.isEmpty() && !isUnbreakable(stack)) {
                 targetNonEmptySlots.add(i);
             }
         }
@@ -162,5 +166,12 @@ public class ItemSwap extends BingoItem {
     @Override
     public boolean canDropFromMob() {
         return true;
+    }
+
+    /**
+     * Check if an item is unbreakable (part of starter kit).
+     */
+    private boolean isUnbreakable(ItemStack stack) {
+        return stack.has(DataComponents.UNBREAKABLE);
     }
 }

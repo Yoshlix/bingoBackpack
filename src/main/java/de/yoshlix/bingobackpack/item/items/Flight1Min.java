@@ -50,12 +50,47 @@ public class Flight1Min extends BingoItem {
         abilities.flying = true;
         player.onUpdateAbilities();
 
-        // Schedule removal
-        long endTime = System.currentTimeMillis() + (DURATION_SECONDS * 1000L);
-        flightEndTimes.put(player.getUUID(), endTime);
+        // Stack flight time if already has flight
+        long additionalTime = DURATION_SECONDS * 1000L;
+        long newEndTime;
+        Long existingEndTime = flightEndTimes.get(player.getUUID());
 
+        // Also check other flight item maps for stacking
+        Long flight5EndTime = Flight5Min.getFlightEndTime(player.getUUID());
+        Long flight15EndTime = Flight15Min.getFlightEndTime(player.getUUID());
+
+        long currentMaxEndTime = System.currentTimeMillis();
+        if (existingEndTime != null && existingEndTime > currentMaxEndTime) {
+            currentMaxEndTime = existingEndTime;
+        }
+        if (flight5EndTime != null && flight5EndTime > currentMaxEndTime) {
+            currentMaxEndTime = flight5EndTime;
+        }
+        if (flight15EndTime != null && flight15EndTime > currentMaxEndTime) {
+            currentMaxEndTime = flight15EndTime;
+        }
+
+        if (currentMaxEndTime > System.currentTimeMillis()) {
+            // Stack time on top of existing flight
+            newEndTime = currentMaxEndTime + additionalTime;
+        } else {
+            newEndTime = System.currentTimeMillis() + additionalTime;
+        }
+
+        // Clear other flight maps and consolidate to this one
+        Flight5Min.clearFlightTime(player.getUUID());
+        Flight15Min.clearFlightTime(player.getUUID());
+        flightEndTimes.put(player.getUUID(), newEndTime);
+
+        int totalSeconds = (int) ((newEndTime - System.currentTimeMillis()) / 1000);
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+        String timeStr = minutes > 0 ? minutes + " Min " + seconds + " Sek" : totalSeconds + " Sekunden";
+
+        boolean wasStacked = currentMaxEndTime > System.currentTimeMillis();
         player.sendSystemMessage(
-                Component.literal("§b§l✈ §rDu kannst jetzt fliegen für " + DURATION_SECONDS + " Sekunden!"));
+                Component.literal("§b§l✈ §rFlug für " + timeStr + "! " +
+                        (wasStacked ? "§e(gestackt!)" : "")));
         player.sendSystemMessage(Component.literal("§7Doppelsprung zum Starten!"));
 
         return true;
@@ -106,6 +141,21 @@ public class Flight1Min extends BingoItem {
             return 0;
         long remaining = endTime - System.currentTimeMillis();
         return remaining > 0 ? (int) (remaining / 1000) : 0;
+    }
+
+    /**
+     * Get the flight end time for a player.
+     */
+    public static Long getFlightEndTime(UUID playerId) {
+        return flightEndTimes.get(playerId);
+    }
+
+    /**
+     * Clear flight time for a player (used when consolidating to another flight
+     * item).
+     */
+    public static void clearFlightTime(UUID playerId) {
+        flightEndTimes.remove(playerId);
     }
 
     @Override

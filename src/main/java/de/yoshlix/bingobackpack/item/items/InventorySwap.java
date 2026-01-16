@@ -3,6 +3,7 @@ package de.yoshlix.bingobackpack.item.items;
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
 import me.jfenn.bingo.api.BingoApi;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -86,21 +87,37 @@ public class InventorySwap extends BingoItem {
         List<ItemStack> playerInventory = new ArrayList<>();
         List<ItemStack> targetInventory = new ArrayList<>();
 
-        // Copy player inventory (excluding this item which will be consumed)
+        // Track unbreakable items to restore them after swap
+        java.util.Map<Integer, ItemStack> playerUnbreakableItems = new java.util.HashMap<>();
+        java.util.Map<Integer, ItemStack> targetUnbreakableItems = new java.util.HashMap<>();
+
+        // Copy player inventory (excluding this item which will be consumed and
+        // unbreakable items)
         for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
             ItemStack stack = player.getInventory().getItem(i);
             // Skip this item (the swap item being used)
             var bingoItem = de.yoshlix.bingobackpack.item.BingoItemRegistry.fromItemStack(stack);
             if (bingoItem.isPresent() && bingoItem.get().getId().equals("inventory_swap")) {
                 playerInventory.add(ItemStack.EMPTY);
+            } else if (isUnbreakable(stack)) {
+                // Save unbreakable items to restore later (starter kit)
+                playerUnbreakableItems.put(i, stack.copy());
+                playerInventory.add(ItemStack.EMPTY);
             } else {
                 playerInventory.add(stack.copy());
             }
         }
 
-        // Copy target inventory
+        // Copy target inventory (excluding unbreakable items)
         for (int i = 0; i < target.getInventory().getContainerSize(); i++) {
-            targetInventory.add(target.getInventory().getItem(i).copy());
+            ItemStack stack = target.getInventory().getItem(i);
+            if (isUnbreakable(stack)) {
+                // Save unbreakable items to restore later (starter kit)
+                targetUnbreakableItems.put(i, stack.copy());
+                targetInventory.add(ItemStack.EMPTY);
+            } else {
+                targetInventory.add(stack.copy());
+            }
         }
 
         // Clear and swap
@@ -115,6 +132,14 @@ public class InventorySwap extends BingoItem {
         // Give target the player's inventory
         for (int i = 0; i < Math.min(playerInventory.size(), target.getInventory().getContainerSize()); i++) {
             target.getInventory().setItem(i, playerInventory.get(i));
+        }
+
+        // Restore unbreakable items to their original owners
+        for (var entry : playerUnbreakableItems.entrySet()) {
+            player.getInventory().setItem(entry.getKey(), entry.getValue());
+        }
+        for (var entry : targetUnbreakableItems.entrySet()) {
+            target.getInventory().setItem(entry.getKey(), entry.getValue());
         }
 
         player.sendSystemMessage(Component.literal("§a§lSWAP! §rDu hast das Inventar mit §e" +
@@ -140,5 +165,12 @@ public class InventorySwap extends BingoItem {
     @Override
     public boolean canDropFromMob() {
         return false; // Too powerful
+    }
+
+    /**
+     * Check if an item is unbreakable (part of starter kit).
+     */
+    private boolean isUnbreakable(ItemStack stack) {
+        return stack.has(DataComponents.UNBREAKABLE);
     }
 }

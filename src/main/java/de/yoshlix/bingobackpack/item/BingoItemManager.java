@@ -100,7 +100,7 @@ public class BingoItemManager {
             // Bonus chance for stronger mobs
             if (killedEntity instanceof Monster monster) {
                 double healthBonus = monster.getMaxHealth() / 20.0; // 1.0 for normal mobs
-                dropChance *= Math.min(healthBonus, 3.0); // Cap at 3x
+                dropChance *= Math.min(healthBonus, 2.0); // Cap at 2x
             }
 
             if (random.nextDouble() < dropChance) {

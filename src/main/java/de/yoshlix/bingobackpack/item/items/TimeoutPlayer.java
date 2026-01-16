@@ -22,7 +22,7 @@ public class TimeoutPlayer extends BingoItem {
 
     private static final Map<UUID, List<ServerPlayer>> pendingTimeouts = new HashMap<>();
     private static final Map<UUID, Long> timedOutPlayers = new HashMap<>();
-    private static final int TIMEOUT_DURATION_SECONDS = 300;
+    private static final int TIMEOUT_DURATION_SECONDS = 150;
 
     @Override
     public String getId() {

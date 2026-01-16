@@ -41,15 +41,28 @@ public class SpeedBoost5Min extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
+        int durationTicks = DURATION_SECONDS * 20;
+
+        // Check if player already has speed effect and stack the duration
+        var existingEffect = player.getEffect(MobEffects.SPEED);
+        if (existingEffect != null) {
+            durationTicks += existingEffect.getDuration();
+        }
+
         player.addEffect(new MobEffectInstance(
                 MobEffects.SPEED,
-                DURATION_SECONDS * 20,
+                durationTicks,
                 AMPLIFIER,
                 false,
                 true,
                 true));
 
-        player.sendSystemMessage(Component.literal("§a§lWOOSH! §rDu bist jetzt schneller für 5 Minuten!"));
+        int totalSeconds = durationTicks / 20;
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+        String timeStr = seconds > 0 ? minutes + " Min " + seconds + " Sek" : minutes + " Minuten";
+        player.sendSystemMessage(Component.literal("§a§lWOOSH! §rSpeed für " + timeStr + "! " +
+                (existingEffect != null ? "§e(gestackt!)" : "")));
         return true;
     }
 

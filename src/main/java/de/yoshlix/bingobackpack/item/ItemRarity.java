@@ -7,11 +7,11 @@ import net.minecraft.ChatFormatting;
  * Each rarity has different drop chances and visual styling.
  */
 public enum ItemRarity {
-    COMMON("Common", ChatFormatting.WHITE, 0.15), // 15% base drop chance
-    UNCOMMON("Uncommon", ChatFormatting.GREEN, 0.08), // 8% base drop chance
-    RARE("Rare", ChatFormatting.BLUE, 0.04), // 4% base drop chance
-    EPIC("Epic", ChatFormatting.DARK_PURPLE, 0.025), // 2.5% base drop chance
-    LEGENDARY("Legendary", ChatFormatting.GOLD, 0.05); // 0.5% base drop chance
+    COMMON("Common", ChatFormatting.WHITE, 0.1), // 10% base drop chance
+    UNCOMMON("Uncommon", ChatFormatting.GREEN, 0.03), // 3% base drop chance
+    RARE("Rare", ChatFormatting.BLUE, 0.02), // 2% base drop chance
+    EPIC("Epic", ChatFormatting.DARK_PURPLE, 0.009), // 0.9% base drop chance
+    LEGENDARY("Legendary", ChatFormatting.GOLD, 0.003); // 0.3% base drop chance
 
     private final String displayName;
     private final ChatFormatting color;

@@ -3,6 +3,7 @@ package de.yoshlix.bingobackpack.item.items;
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
 import me.jfenn.bingo.api.BingoApi;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -87,10 +88,11 @@ public class DeleteEnemyItems extends BingoItem {
         // Determine number of items to delete
         int itemsToDelete = MIN_ITEMS + random.nextInt(MAX_ITEMS - MIN_ITEMS + 1);
 
-        // Find non-empty slots
+        // Find non-empty slots (excluding unbreakable items from starter kit)
         List<Integer> nonEmptySlots = new ArrayList<>();
         for (int i = 0; i < target.getInventory().getContainerSize(); i++) {
-            if (!target.getInventory().getItem(i).isEmpty()) {
+            ItemStack stack = target.getInventory().getItem(i);
+            if (!stack.isEmpty() && !isUnbreakable(stack)) {
                 nonEmptySlots.add(i);
             }
         }
@@ -139,5 +141,12 @@ public class DeleteEnemyItems extends BingoItem {
     @Override
     public boolean canDropFromMob() {
         return true;
+    }
+
+    /**
+     * Check if an item is unbreakable (part of starter kit).
+     */
+    private boolean isUnbreakable(ItemStack stack) {
+        return stack.has(DataComponents.UNBREAKABLE);
     }
 }

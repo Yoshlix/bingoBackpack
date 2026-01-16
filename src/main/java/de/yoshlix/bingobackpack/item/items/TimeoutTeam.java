@@ -15,7 +15,7 @@ import java.util.*;
  */
 public class TimeoutTeam extends BingoItem {
 
-    private static final int TIMEOUT_DURATION_SECONDS = 300;
+    private static final int TIMEOUT_DURATION_SECONDS = 150;
 
     @Override
     public String getId() {

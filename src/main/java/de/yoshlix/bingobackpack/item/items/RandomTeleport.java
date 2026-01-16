@@ -86,20 +86,46 @@ public class RandomTeleport extends BingoItem {
     private int findSafeY(ServerLevel level, BlockPos pos) {
         int surfaceY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, pos.getX(), pos.getZ());
 
-        // Check if the surface is safe (not in lava, has air above)
-        BlockPos surfacePos = new BlockPos(pos.getX(), surfaceY, pos.getZ());
+        // The heightmap returns the Y of the first non-air block from above
+        // We need to teleport the player ON TOP of this block, so we add 1
+        // But we also need to ensure there's enough space for the player (2 blocks
+        // tall)
 
-        if (level.getBlockState(surfacePos).isAir() &&
-                level.getBlockState(surfacePos.above()).isAir()) {
+        BlockPos groundPos = new BlockPos(pos.getX(), surfaceY - 1, pos.getZ());
+        BlockPos feetPos = new BlockPos(pos.getX(), surfaceY, pos.getZ());
+        BlockPos headPos = new BlockPos(pos.getX(), surfaceY + 1, pos.getZ());
+
+        // Check if surfaceY position is safe:
+        // - Ground below is solid (not air, not liquid)
+        // - Feet position is air (or passable)
+        // - Head position is air (or passable)
+        var groundState = level.getBlockState(groundPos);
+        var feetState = level.getBlockState(feetPos);
+        var headState = level.getBlockState(headPos);
+
+        boolean groundIsSolid = !groundState.isAir() && !groundState.liquid();
+        boolean feetIsPassable = feetState.isAir() || !feetState.blocksMotion();
+        boolean headIsPassable = headState.isAir() || !headState.blocksMotion();
+
+        if (groundIsSolid && feetIsPassable && headIsPassable) {
             return surfaceY;
         }
 
-        // Search for safe spot
+        // Search for safe spot upward from surface
         for (int y = surfaceY; y < level.getMaxY() - 2; y++) {
-            BlockPos checkPos = new BlockPos(pos.getX(), y, pos.getZ());
-            if (level.getBlockState(checkPos).isAir() &&
-                    level.getBlockState(checkPos.above()).isAir() &&
-                    !level.getBlockState(checkPos.below()).isAir()) {
+            BlockPos checkGround = new BlockPos(pos.getX(), y - 1, pos.getZ());
+            BlockPos checkFeet = new BlockPos(pos.getX(), y, pos.getZ());
+            BlockPos checkHead = new BlockPos(pos.getX(), y + 1, pos.getZ());
+
+            var checkGroundState = level.getBlockState(checkGround);
+            var checkFeetState = level.getBlockState(checkFeet);
+            var checkHeadState = level.getBlockState(checkHead);
+
+            boolean checkGroundSolid = !checkGroundState.isAir() && !checkGroundState.liquid();
+            boolean checkFeetPassable = checkFeetState.isAir() || !checkFeetState.blocksMotion();
+            boolean checkHeadPassable = checkHeadState.isAir() || !checkHeadState.blocksMotion();
+
+            if (checkGroundSolid && checkFeetPassable && checkHeadPassable) {
                 return y;
             }
         }
