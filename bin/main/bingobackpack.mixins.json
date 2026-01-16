@@ -4,7 +4,8 @@
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
 		"HungerMixin",
-		"BundleItemMixin"
+		"BundleItemMixin",
+		"BingoTeamServiceMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
