@@ -62,9 +62,11 @@ jobs:
         name: minecraft-mod
         path: |
           build/libs/bingobackpack-*.jar
-          bingo/mc1.21.11/build/libs/bingo-*-all.jar
+          bingo/mc1.21.11/build/libs/bingo-*+mc1.21.11.jar
           !build/libs/*-sources.jar
           !build/libs/*-dev.jar
+          !bingo/mc1.21.11/build/libs/*-all.jar
+          !bingo/mc1.21.11/build/libs/*-sources.jar
         retention-days: 30
 
     - name: Generate Changelog
@@ -125,7 +127,9 @@ jobs:
         prerelease: false
         files: |
           build/libs/bingobackpack-*.jar
-          bingo/mc1.21.11/build/libs/bingo-*-all.jar
+          bingo/mc1.21.11/build/libs/bingo-*+mc1.21.11.jar
+          !bingo/mc1.21.11/build/libs/*-all.jar
+          !bingo/mc1.21.11/build/libs/*-sources.jar
         make_latest: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

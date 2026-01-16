@@ -46,6 +46,8 @@ public class BingoItemRegistry {
         register(new RandomTeleport());
         register(new BiomeTeleportRandom());
         register(new BiomeTeleportChoice());
+        register(new NetherTeleport());
+        register(new EndTeleport());
 
         // PvP Items
         register(new KillEnemyTeam());
@@ -72,6 +74,11 @@ public class BingoItemRegistry {
         // Utility Items
         register(new BingoRadar());
         register(new TeamShield());
+
+        // Special Items
+        register(new FakeCompletion());
+        register(new Lockdown());
+        register(new Wildcard());
 
         // Legacy Example
 

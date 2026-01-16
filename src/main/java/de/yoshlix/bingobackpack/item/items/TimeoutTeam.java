@@ -7,6 +7,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.player.Abilities;
 
 import java.util.*;
 
@@ -111,6 +112,21 @@ public class TimeoutTeam extends BingoItem {
         target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, durationTicks, 255, false, false, true));
         target.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, durationTicks, 0, false, false, true));
         target.addEffect(new MobEffectInstance(MobEffects.JUMP_BOOST, durationTicks, 128, false, false, true));
+
+        // Disable flight if the player has temporary flight
+        if (!target.isCreative() && !target.isSpectator()) {
+            Abilities abilities = target.getAbilities();
+            if (abilities.mayfly) {
+                abilities.mayfly = false;
+                abilities.flying = false;
+                target.onUpdateAbilities();
+                target.sendSystemMessage(Component.literal("§c§l✈ §rDeine Flugfähigkeit wurde eingefroren!"));
+            }
+            // Clear any temporary flight times
+            Flight1Min.clearFlightTime(target.getUUID());
+            Flight5Min.clearFlightTime(target.getUUID());
+            Flight15Min.clearFlightTime(target.getUUID());
+        }
     }
 
     @Override

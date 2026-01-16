@@ -46,7 +46,17 @@ public class BingoItemCommands {
                 // /bingobackpack timeout <number> - For TimeoutPlayer
                 .then(Commands.literal("timeout")
                         .then(Commands.argument("selection", StringArgumentType.string())
-                                .executes(BingoItemCommands::handleTimeout))));
+                                .executes(BingoItemCommands::handleTimeout)))
+
+                // /bingobackpack lockdown <number> - For Lockdown
+                .then(Commands.literal("lockdown")
+                        .then(Commands.argument("selection", StringArgumentType.string())
+                                .executes(BingoItemCommands::handleLockdown)))
+
+                // /bingobackpack wildcard <item_id> - For Wildcard
+                .then(Commands.literal("wildcard")
+                        .then(Commands.argument("selection", StringArgumentType.greedyString())
+                                .executes(BingoItemCommands::handleWildcard))));
     }
 
     private static int handleSelect(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -124,6 +134,32 @@ public class BingoItemCommands {
         }
 
         player.sendSystemMessage(Component.literal("§cKeine ausstehende Timeout-Auswahl!"));
+        return 0;
+    }
+
+    private static int handleLockdown(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
+        String selection = StringArgumentType.getString(context, "selection");
+
+        if (Lockdown.hasPendingLockdown(player.getUUID())) {
+            Lockdown.processLockdown(player, selection);
+            return 1;
+        }
+
+        player.sendSystemMessage(Component.literal("§cKeine ausstehende Lockdown-Auswahl!"));
+        return 0;
+    }
+
+    private static int handleWildcard(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
+        String selection = StringArgumentType.getString(context, "selection");
+
+        if (Wildcard.hasPendingSelection(player.getUUID())) {
+            Wildcard.selectItem(player, selection);
+            return 1;
+        }
+
+        player.sendSystemMessage(Component.literal("§cKeine ausstehende Wildcard-Auswahl!"));
         return 0;
     }
 }

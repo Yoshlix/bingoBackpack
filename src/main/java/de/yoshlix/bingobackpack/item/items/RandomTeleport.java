@@ -6,6 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
 
 import java.util.List;
@@ -19,6 +20,7 @@ public class RandomTeleport extends BingoItem {
     private final Random random = new Random();
     private static final int MIN_DISTANCE = 500;
     private static final int MAX_DISTANCE = 5000;
+    private static final int NETHER_CEILING_Y = 127; // Nether ceiling starts at Y=127
 
     @Override
     public String getId() {
@@ -51,17 +53,24 @@ public class RandomTeleport extends BingoItem {
         int newX = (int) (player.getX() + Math.cos(angle) * distance);
         int newZ = (int) (player.getZ() + Math.sin(angle) * distance);
 
+        // Force chunk generation at target location
+        level.getChunk(newX >> 4, newZ >> 4);
+
         // Find safe Y position
         BlockPos targetPos = new BlockPos(newX, 0, newZ);
         int safeY = findSafeY(level, targetPos);
 
         if (safeY == -1) {
-            // Try a few more times
-            for (int i = 0; i < 5; i++) {
+            // Try a few more times with different positions
+            for (int i = 0; i < 10; i++) {
                 angle = random.nextDouble() * 2 * Math.PI;
                 distance = MIN_DISTANCE + random.nextInt(MAX_DISTANCE - MIN_DISTANCE);
                 newX = (int) (player.getX() + Math.cos(angle) * distance);
                 newZ = (int) (player.getZ() + Math.sin(angle) * distance);
+
+                // Force chunk generation
+                level.getChunk(newX >> 4, newZ >> 4);
+
                 targetPos = new BlockPos(newX, 0, newZ);
                 safeY = findSafeY(level, targetPos);
                 if (safeY != -1)
@@ -70,7 +79,18 @@ public class RandomTeleport extends BingoItem {
         }
 
         if (safeY == -1) {
-            safeY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, newX, newZ) + 1;
+            // Fallback: use heightmap + 1 but ensure it's above sea level
+            // In the Nether, cap at ceiling level to avoid spawning on top of bedrock
+            boolean isNether = level.dimension() == Level.NETHER;
+            int heightmapY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, newX, newZ);
+
+            if (isNether) {
+                // In Nether, don't use heightmap (would put us on ceiling)
+                // Instead, try Y=64 as a reasonable middle ground
+                safeY = 64;
+            } else {
+                safeY = Math.max(heightmapY + 1, level.getSeaLevel() + 1);
+            }
         }
 
         // Teleport player
@@ -84,53 +104,85 @@ public class RandomTeleport extends BingoItem {
     }
 
     private int findSafeY(ServerLevel level, BlockPos pos) {
-        int surfaceY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, pos.getX(), pos.getZ());
+        boolean isNether = level.dimension() == Level.NETHER;
+        int minY = level.getMinY();
 
-        // The heightmap returns the Y of the first non-air block from above
-        // We need to teleport the player ON TOP of this block, so we add 1
-        // But we also need to ensure there's enough space for the player (2 blocks
-        // tall)
-
-        BlockPos groundPos = new BlockPos(pos.getX(), surfaceY - 1, pos.getZ());
-        BlockPos feetPos = new BlockPos(pos.getX(), surfaceY, pos.getZ());
-        BlockPos headPos = new BlockPos(pos.getX(), surfaceY + 1, pos.getZ());
-
-        // Check if surfaceY position is safe:
-        // - Ground below is solid (not air, not liquid)
-        // - Feet position is air (or passable)
-        // - Head position is air (or passable)
-        var groundState = level.getBlockState(groundPos);
-        var feetState = level.getBlockState(feetPos);
-        var headState = level.getBlockState(headPos);
-
-        boolean groundIsSolid = !groundState.isAir() && !groundState.liquid();
-        boolean feetIsPassable = feetState.isAir() || !feetState.blocksMotion();
-        boolean headIsPassable = headState.isAir() || !headState.blocksMotion();
-
-        if (groundIsSolid && feetIsPassable && headIsPassable) {
-            return surfaceY;
+        if (isNether) {
+            // In the Nether, we need to search from bottom to ceiling, avoiding the bedrock
+            // roof
+            return findSafeYNether(level, pos);
         }
 
-        // Search for safe spot upward from surface
-        for (int y = surfaceY; y < level.getMaxY() - 2; y++) {
-            BlockPos checkGround = new BlockPos(pos.getX(), y - 1, pos.getZ());
-            BlockPos checkFeet = new BlockPos(pos.getX(), y, pos.getZ());
-            BlockPos checkHead = new BlockPos(pos.getX(), y + 1, pos.getZ());
+        // Normal dimension logic using heightmap
+        int surfaceY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, pos.getX(), pos.getZ());
 
-            var checkGroundState = level.getBlockState(checkGround);
-            var checkFeetState = level.getBlockState(checkFeet);
-            var checkHeadState = level.getBlockState(checkHead);
+        // Ensure we're above the minimum build height and have a reasonable surface
+        if (surfaceY <= minY + 5) {
+            // Probably in void or ungenerated - not safe
+            return -1;
+        }
 
-            boolean checkGroundSolid = !checkGroundState.isAir() && !checkGroundState.liquid();
-            boolean checkFeetPassable = checkFeetState.isAir() || !checkFeetState.blocksMotion();
-            boolean checkHeadPassable = checkHeadState.isAir() || !checkHeadState.blocksMotion();
+        // Check multiple positions around the surface
+        for (int yOffset = 0; yOffset <= 10; yOffset++) {
+            int testY = surfaceY + yOffset;
 
-            if (checkGroundSolid && checkFeetPassable && checkHeadPassable) {
+            if (isSafePosition(level, pos.getX(), testY, pos.getZ())) {
+                return testY;
+            }
+        }
+
+        return -1;
+    }
+
+    /**
+     * Find a safe Y position in the Nether by scanning from bottom up,
+     * but staying below the bedrock ceiling.
+     */
+    private int findSafeYNether(ServerLevel level, BlockPos pos) {
+        int minY = level.getMinY();
+        int maxSafeY = NETHER_CEILING_Y - 2; // Stay well below the ceiling
+
+        // Scan from bottom to top, looking for the first safe spot
+        for (int y = minY + 1; y <= maxSafeY; y++) {
+            if (isSafePosition(level, pos.getX(), y, pos.getZ())) {
+                return y;
+            }
+        }
+
+        // If no safe spot found scanning up, try scanning down from ceiling
+        for (int y = maxSafeY; y >= minY + 1; y--) {
+            if (isSafePosition(level, pos.getX(), y, pos.getZ())) {
                 return y;
             }
         }
 
         return -1;
+    }
+
+    /**
+     * Check if a position is safe for the player to stand at.
+     * 
+     * @param y The Y position where the player's feet would be
+     */
+    private boolean isSafePosition(ServerLevel level, int x, int y, int z) {
+        BlockPos groundPos = new BlockPos(x, y - 1, z);
+        BlockPos feetPos = new BlockPos(x, y, z);
+        BlockPos headPos = new BlockPos(x, y + 1, z);
+
+        var groundState = level.getBlockState(groundPos);
+        var feetState = level.getBlockState(feetPos);
+        var headState = level.getBlockState(headPos);
+
+        // Ground must be solid and not dangerous (not lava, not fire)
+        boolean groundIsSafe = !groundState.isAir()
+                && !groundState.liquid()
+                && groundState.blocksMotion();
+
+        // Feet and head must be passable (air or non-blocking) and not dangerous
+        boolean feetIsPassable = !feetState.blocksMotion() && !feetState.liquid();
+        boolean headIsPassable = !headState.blocksMotion() && !headState.liquid();
+
+        return groundIsSafe && feetIsPassable && headIsPassable;
     }
 
     @Override

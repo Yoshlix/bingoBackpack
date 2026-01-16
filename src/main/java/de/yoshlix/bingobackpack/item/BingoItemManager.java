@@ -1,6 +1,7 @@
 package de.yoshlix.bingobackpack.item;
 
 import de.yoshlix.bingobackpack.BingoBackpack;
+import de.yoshlix.bingobackpack.item.items.Lockdown;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -12,8 +13,11 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.UUID;
 
 /**
  * Manager for Bingo Item operations.
@@ -27,6 +31,10 @@ public class BingoItemManager {
     // Config values (can be modified)
     private double globalDropChanceMultiplier = 1.0;
     private boolean dropsEnabled = true;
+
+    // Cooldown for mob drops (60 seconds)
+    private static final long DROP_COOLDOWN_MS = 60 * 1000L;
+    private final Map<UUID, Long> lastDropTime = new HashMap<>();
 
     public static BingoItemManager getInstance() {
         if (instance == null) {
@@ -53,6 +61,14 @@ public class BingoItemManager {
         }
 
         BingoItem item = itemOpt.get();
+
+        // Check if player is locked down
+        if (Lockdown.isLocked(player.getUUID())) {
+            int remaining = Lockdown.getRemainingLockdownSeconds(player.getUUID());
+            player.sendSystemMessage(
+                    Component.literal("§4§l🔒 GESPERRT! §r§cDein Backpack ist noch " + remaining + "s gesperrt!"));
+            return false;
+        }
 
         try {
             boolean consumed = item.onUse(player);
@@ -90,6 +106,13 @@ public class BingoItemManager {
         if (killedEntity instanceof Player)
             return; // Don't drop from players
 
+        // Check cooldown
+        UUID playerId = serverPlayer.getUUID();
+        Long lastDrop = lastDropTime.get(playerId);
+        if (lastDrop != null && System.currentTimeMillis() - lastDrop < DROP_COOLDOWN_MS) {
+            return; // Still on cooldown
+        }
+
         // Optional: Only drop from monsters
         // if (!(killedEntity instanceof Monster)) return;
 
@@ -105,6 +128,9 @@ public class BingoItemManager {
 
             if (random.nextDouble() < dropChance) {
                 dropItemAtEntity(killedEntity, item);
+
+                // Set cooldown
+                lastDropTime.put(playerId, System.currentTimeMillis());
 
                 // Notify player
                 serverPlayer.sendSystemMessage(
