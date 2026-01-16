@@ -44,6 +44,7 @@ public class BingoItemRegistry {
 
         // ========================================
         register(new ExampleSpeedBoostItem());
+        register(new CompleteRandomBingoField());
         initialized = true;
         BingoBackpack.LOGGER.info("Registered {} Bingo Items ({} droppable)",
                 ITEMS.size(), DROPPABLE_ITEMS.size());
