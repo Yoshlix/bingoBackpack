@@ -43,6 +43,7 @@ public class BingoBackpack implements ModInitializer {
 			BackpackCommand.register(dispatcher);
 			TeleportToSpawnCommand.register(dispatcher);
 			BingoItemCommands.register(dispatcher);
+			UpCommand.register(dispatcher);
 		});
 
 		// Initialize managers when server starts
