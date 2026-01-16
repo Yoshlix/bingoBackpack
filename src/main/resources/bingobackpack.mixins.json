@@ -5,7 +5,9 @@
 	"mixins": [
 		"HungerMixin",
 		"BundleItemMixin",
-		"BingoTeamServiceMixin"
+		"BingoTeamServiceMixin",
+		"BingoItemUseMixin",
+		"MobDeathMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

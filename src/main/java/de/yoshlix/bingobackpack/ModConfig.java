@@ -14,6 +14,8 @@ public class ModConfig {
 
     public boolean hungerMixinEnabled = false;
     public boolean spawnTeleportEnabled = false;
+    public boolean bingoItemsEnabled = true;
+    public double bingoItemsDropMultiplier = 1.0;
 
     public static ModConfig getInstance() {
         if (instance == null) {

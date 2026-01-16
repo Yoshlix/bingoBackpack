@@ -43,7 +43,17 @@ dependencies {
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 	
-	modImplementation "me.jfenn.bingo:api:2.9.5"
+	// Kotlin stdlib for Bingo API
+	implementation "org.jetbrains.kotlin:kotlin-stdlib:2.2.21"
+	
+	// Local Bingo API (custom version - compile against the modules)
+	compileOnly files('bingo/api/build/libs/bingo-api-2.9.7-custom.jar')
+	compileOnly files('bingo/common/build/libs/bingo-common-2.9.7-custom.jar')
+	compileOnly files('bingo/platform/build/libs/bingo-platform-2.9.7-custom.jar')
+	
+	// Runtime: The Bingo mod JAR must be manually placed in run/mods/ folder
+	// Use: cp bingo/mc1.21.11/build/libs/bingo-*+mc1.21.11.jar run/mods/
+	// The fat JAR (-all.jar) is missing fabric-language-kotlin, so use the normal JAR
 }
 
 processResources {

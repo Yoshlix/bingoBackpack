@@ -18,7 +18,8 @@ public class TeleportToSpawnCommand {
     }
 
     private static int teleportToSpawn(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-        if (BingoApi.getGame().getStatus() != BingoGameStatus.PLAYING)
+        var game = BingoApi.getGame();
+        if (game == null || game.getStatus() != BingoGameStatus.PLAYING)
             return 0;
 
         ServerPlayer player = context.getSource().getPlayerOrException();
