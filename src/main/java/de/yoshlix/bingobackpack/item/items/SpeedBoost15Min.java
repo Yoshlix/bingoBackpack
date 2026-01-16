@@ -1,0 +1,67 @@
+package de.yoshlix.bingobackpack.item.items;
+
+import de.yoshlix.bingobackpack.item.BingoItem;
+import de.yoshlix.bingobackpack.item.ItemRarity;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+
+import java.util.List;
+
+/**
+ * Speed boost for 15 minutes.
+ */
+public class SpeedBoost15Min extends BingoItem {
+
+    private static final int DURATION_SECONDS = 900;
+    private static final int AMPLIFIER = 2; // Speed III
+
+    @Override
+    public String getId() {
+        return "speed_boost_15min";
+    }
+
+    @Override
+    public String getName() {
+        return "Schnelligkeit (15 Min)";
+    }
+
+    @Override
+    public String getDescription() {
+        return "Gibt dir Speed III für 15 Minuten.";
+    }
+
+    @Override
+    public ItemRarity getRarity() {
+        return ItemRarity.RARE;
+    }
+
+    @Override
+    public boolean onUse(ServerPlayer player) {
+        player.addEffect(new MobEffectInstance(
+                MobEffects.SPEED,
+                DURATION_SECONDS * 20,
+                AMPLIFIER,
+                false,
+                true,
+                true));
+
+        player.sendSystemMessage(Component.literal("§a§lWOOSH! §rDu bist jetzt SEHR schnell für 15 Minuten!"));
+        return true;
+    }
+
+    @Override
+    public List<Component> getExtraLore() {
+        return List.of(
+                Component.literal("Speed III").withStyle(Style.EMPTY.withColor(ChatFormatting.AQUA)),
+                Component.literal("Dauer: 15 Minuten").withStyle(ChatFormatting.GRAY));
+    }
+
+    @Override
+    public boolean canDropFromMob() {
+        return true;
+    }
+}

@@ -35,16 +35,47 @@ public class BingoItemRegistry {
         // REGISTER YOUR ITEMS HERE
         // ========================================
 
-        // Example items - uncomment or add your own:
-        // register(new SpeedBoostItem());
-        // register(new HealingItem());
-        // register(new TeleportHomeItem());
-        // register(new ExtraHeartsItem());
-        // register(new InvisibilityItem());
+        // Bingo Field Items
+        register(new CompleteRandomBingoField());
+        register(new CompleteChosenBingoField());
+        register(new RerollRandomField());
+        register(new RerollChosenField());
+        register(new ResetFieldProgress());
+
+        // Teleport Items
+        register(new RandomTeleport());
+        register(new BiomeTeleportRandom());
+        register(new BiomeTeleportChoice());
+
+        // PvP Items
+        register(new KillEnemyTeam());
+        register(new KillRandomPlayer());
+        register(new SwapLocationRandom());
+        register(new SwapLocationChoice());
+        register(new InventorySwap());
+        register(new ItemSwap());
+        register(new DeleteEnemyItems());
+
+        // Buff Items
+        register(new SpeedBoost1Min());
+        register(new SpeedBoost5Min());
+        register(new SpeedBoost15Min());
+        register(new Flight1Min());
+        register(new Flight5Min());
+        register(new Flight15Min());
+
+        // Game Control Items
+        register(new ShuffleBingoCard());
+        register(new TimeoutPlayer());
+        register(new TimeoutTeam());
+
+        // Utility Items
+        register(new BingoRadar());
+        register(new TeamShield());
+
+        // Legacy Example
 
         // ========================================
-        register(new ExampleSpeedBoostItem());
-        register(new CompleteRandomBingoField());
         initialized = true;
         BingoBackpack.LOGGER.info("Registered {} Bingo Items ({} droppable)",
                 ITEMS.size(), DROPPABLE_ITEMS.size());

@@ -11,9 +11,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -37,12 +34,13 @@ public class SpawnManager {
         if (s == null || server == null)
             return false;
 
-        var levelKey = ResourceKey.create(Registries.DIMENSION, Identifier.parse(s.dimension));
-        ServerLevel level = server.getLevel(levelKey);
-        if (level == null)
+        // Always teleport to Overworld
+        ServerLevel overworld = server.overworld();
+        if (overworld == null)
             return false;
 
-        player.connection.teleport(s.x, s.y, s.z, s.yaw, s.pitch);
+        // Use teleportTo for proper dimension-crossing teleport
+        player.teleportTo(overworld, s.x, s.y, s.z, java.util.Set.of(), s.yaw, s.pitch, true);
         return true;
     }
 
