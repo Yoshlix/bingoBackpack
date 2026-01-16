@@ -149,6 +149,9 @@ public class Lockdown extends BingoItem {
             target.sendSystemMessage(Component.literal("§7Du kannst 2 Minuten keine Bingo-Items benutzen!"));
             target.sendSystemMessage(Component.literal(""));
 
+            // Consume the Lockdown item
+            consumeItem(user);
+
             // Clean up
             pendingLockdowns.remove(user.getUUID());
             return true;
@@ -203,6 +206,17 @@ public class Lockdown extends BingoItem {
     private static void applyLockdown(ServerPlayer player) {
         long endTime = System.currentTimeMillis() + (LOCKDOWN_DURATION_SECONDS * 1000L);
         lockedPlayers.put(player.getUUID(), endTime);
+    }
+
+    private static void consumeItem(ServerPlayer player) {
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            var stack = player.getInventory().getItem(i);
+            var itemOpt = de.yoshlix.bingobackpack.item.BingoItemRegistry.fromItemStack(stack);
+            if (itemOpt.isPresent() && itemOpt.get().getId().equals("lockdown")) {
+                stack.shrink(1);
+                return;
+            }
+        }
     }
 
     /**

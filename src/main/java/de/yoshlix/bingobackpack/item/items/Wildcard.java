@@ -110,10 +110,24 @@ public class Wildcard extends BingoItem {
                 .append(Component.literal(selectedItem.getName()).withStyle(selectedItem.getRarity().getColor()))
                 .append(Component.literal(" §6gewählt!")));
 
+        // Consume the Wildcard item
+        consumeItem(player);
+
         // Clean up
         pendingSelections.remove(player.getUUID());
 
         return true;
+    }
+
+    private static void consumeItem(ServerPlayer player) {
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            var stack = player.getInventory().getItem(i);
+            var itemOpt = de.yoshlix.bingobackpack.item.BingoItemRegistry.fromItemStack(stack);
+            if (itemOpt.isPresent() && itemOpt.get().getId().equals("wildcard")) {
+                stack.shrink(1);
+                return;
+            }
+        }
     }
 
     /**
