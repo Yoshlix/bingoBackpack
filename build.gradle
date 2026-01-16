@@ -43,7 +43,13 @@ dependencies {
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 	
-	modImplementation "me.jfenn.bingo:api:2.9.5"
+	// Kotlin stdlib for Bingo API
+	implementation "org.jetbrains.kotlin:kotlin-stdlib:2.2.21"
+	
+	// Local Bingo API (custom version - use built JAR files)
+	implementation files('bingo/api/build/libs/bingo-api-2.9.6.jar')
+	implementation files('bingo/common/build/libs/bingo-common-2.9.6.jar')
+	implementation files('bingo/platform/build/libs/bingo-platform-2.9.6.jar')
 }
 
 processResources {

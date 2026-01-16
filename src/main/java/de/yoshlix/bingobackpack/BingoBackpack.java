@@ -1,5 +1,8 @@
 package de.yoshlix.bingobackpack;
 
+import de.yoshlix.bingobackpack.item.BingoItemCreativeTab;
+import de.yoshlix.bingobackpack.item.BingoItemManager;
+import de.yoshlix.bingobackpack.item.BingoItemRegistry;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -19,6 +22,14 @@ public class BingoBackpack implements ModInitializer {
 
 		// Load config
 		ModConfig.load(FabricLoader.getInstance().getConfigDir());
+
+		// Initialize Bingo Item Registry and Creative Tab
+		BingoItemRegistry.init();
+		BingoItemCreativeTab.register();
+
+		// Apply config to BingoItemManager
+		BingoItemManager.getInstance().setDropsEnabled(ModConfig.getInstance().bingoItemsEnabled);
+		BingoItemManager.getInstance().setGlobalDropChanceMultiplier(ModConfig.getInstance().bingoItemsDropMultiplier);
 
 		// Register commands
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {

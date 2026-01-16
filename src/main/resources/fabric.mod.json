@@ -12,7 +12,7 @@
 	},
 	"license": "CC0-1.0",
 	"icon": "assets/bingobackpack/icon.png",
-	"environment": "server",
+	"environment": "*",
 	"entrypoints": {
 		"main": [
 			"de.yoshlix.bingobackpack.BingoBackpack"

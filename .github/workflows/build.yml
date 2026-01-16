@@ -18,6 +18,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
+        submodules: recursive
       
     - name: Set up JDK 21
       uses: actions/setup-java@v4
@@ -29,7 +30,14 @@ jobs:
       uses: gradle/actions/setup-gradle@v4
       
     - name: Make gradlew executable
-      run: chmod +x ./gradlew
+      run: |
+        chmod +x ./gradlew
+        chmod +x ./bingo/gradlew
+    
+    - name: Build Bingo API modules
+      run: |
+        cd bingo
+        ./gradlew :api:build :common:build :platform:build --no-daemon
 
     - name: Get mod version
       id: get_version
@@ -41,13 +49,22 @@ jobs:
       
     - name: Build with Gradle
       run: ./gradlew build --no-daemon
+    
+    - name: Build Bingo Mod (MC 1.21.11)
+      run: |
+        cd bingo
+        ./gradlew :mc1.21.11:build --no-daemon
       
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       if: success()
       with:
         name: minecraft-mod
-        path: build/libs/*.jar
+        path: |
+          build/libs/bingobackpack-*.jar
+          bingo/mc1.21.11/build/libs/bingo-*-all.jar
+          !build/libs/*-sources.jar
+          !build/libs/*-dev.jar
         retention-days: 30
 
     - name: Generate Changelog
@@ -87,7 +104,9 @@ jobs:
         echo "" >> CHANGELOG.md
         echo "" >> CHANGELOG.md
         echo "---" >> CHANGELOG.md
-        echo "📦 **Installation:** Place the JAR file in your \`mods\` folder." >> CHANGELOG.md
+        echo "📦 **Installation:** Place BOTH JAR files in your \`mods\` folder:" >> CHANGELOG.md
+        echo "- \`bingobackpack-*.jar\` - The BingoBackpack mod" >> CHANGELOG.md
+        echo "- \`bingo-*.jar\` - Custom Yet Another Bingo (required)" >> CHANGELOG.md
 
     - name: Delete old release
       if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
@@ -105,7 +124,8 @@ jobs:
         draft: false
         prerelease: false
         files: |
-          build/libs/*.jar
+          build/libs/bingobackpack-*.jar
+          bingo/mc1.21.11/build/libs/bingo-*-all.jar
         make_latest: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

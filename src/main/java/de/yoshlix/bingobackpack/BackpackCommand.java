@@ -1,11 +1,16 @@
 package de.yoshlix.bingobackpack;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+import de.yoshlix.bingobackpack.item.BingoItem;
+import de.yoshlix.bingobackpack.item.BingoItemManager;
+import de.yoshlix.bingobackpack.item.BingoItemRegistry;
+import de.yoshlix.bingobackpack.item.ItemRarity;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
@@ -16,6 +21,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.CustomData;
 
+import java.util.Collection;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -114,8 +121,62 @@ public class BackpackCommand {
                                 .then(Commands.literal("on")
                                         .executes(ctx -> setAutoSync(ctx, true)))
                                 .then(Commands.literal("off")
-                                        .executes(ctx -> setAutoSync(ctx, false))))));
+                                        .executes(ctx -> setAutoSync(ctx, false)))))
 
+                // Bingo Items commands (OP only)
+                .then(Commands.literal("items")
+                        .requires(source -> Commands.hasPermission(Commands.LEVEL_GAMEMASTERS).test(source))
+
+                        // /backpack items on/off - Toggle bingo items
+                        .then(Commands.literal("on")
+                                .executes(ctx -> toggleConfig(ctx, "items", true)))
+                        .then(Commands.literal("off")
+                                .executes(ctx -> toggleConfig(ctx, "items", false)))
+
+                        // /backpack items dropmultiplier <value> - Set drop chance multiplier
+                        .then(Commands.literal("dropmultiplier")
+                                .then(Commands.argument("multiplier", DoubleArgumentType.doubleArg(0.0, 10.0))
+                                        .executes(BackpackCommand::setDropMultiplier)))
+
+                        // /backpack items give <player> <item_id> - Give specific item
+                        .then(Commands.literal("give")
+                                .then(Commands.argument("player", EntityArgument.player())
+                                        .then(Commands.argument("item", StringArgumentType.word())
+                                                .suggests(BackpackCommand::suggestBingoItems)
+                                                .executes(BackpackCommand::giveItem))))
+
+                        // /backpack items giverandom <player> [rarity] - Give random item
+                        .then(Commands.literal("giverandom")
+                                .then(Commands.argument("player", EntityArgument.player())
+                                        .executes(BackpackCommand::giveRandomItem)
+                                        .then(Commands.argument("rarity", StringArgumentType.word())
+                                                .suggests(BackpackCommand::suggestRarities)
+                                                .executes(BackpackCommand::giveRandomItemWithRarity))))
+
+                        // /backpack items list - List all registered items
+                        .then(Commands.literal("list")
+                                .executes(BackpackCommand::listItems))));
+
+    }
+
+    private static CompletableFuture<Suggestions> suggestBingoItems(CommandContext<CommandSourceStack> context,
+            SuggestionsBuilder builder) {
+        for (BingoItem item : BingoItemRegistry.getAllItems()) {
+            if (item.getId().toLowerCase().startsWith(builder.getRemainingLowerCase())) {
+                builder.suggest(item.getId());
+            }
+        }
+        return builder.buildFuture();
+    }
+
+    private static CompletableFuture<Suggestions> suggestRarities(CommandContext<CommandSourceStack> context,
+            SuggestionsBuilder builder) {
+        for (ItemRarity rarity : ItemRarity.values()) {
+            if (rarity.name().toLowerCase().startsWith(builder.getRemainingLowerCase())) {
+                builder.suggest(rarity.name().toLowerCase());
+            }
+        }
+        return builder.buildFuture();
     }
 
     private static CompletableFuture<Suggestions> suggestTeams(CommandContext<CommandSourceStack> context,
@@ -368,6 +429,10 @@ public class BackpackCommand {
             case "spawn":
                 config.spawnTeleportEnabled = value;
                 break;
+            case "items":
+                config.bingoItemsEnabled = value;
+                BingoItemManager.getInstance().setDropsEnabled(value);
+                break;
             default:
                 ctx.getSource().sendFailure(Component.literal("Unknown config flag: " + configName));
                 return 0;
@@ -376,7 +441,7 @@ public class BackpackCommand {
         ModConfig.save(net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir());
 
         ctx.getSource().sendSuccess(() -> Component.literal(
-                "§a" + configName + " mixin " + (value ? "enabled" : "disabled")), true);
+                "§a" + configName + " " + (value ? "enabled" : "disabled")), true);
 
         return 1;
     }
@@ -387,9 +452,90 @@ public class BackpackCommand {
         ctx.getSource().sendSuccess(() -> Component.literal(
                 "§6Config Status:\n" +
                         "§7- Hunger: " + (config.hungerMixinEnabled ? "§aEnabled" : "§cDisabled") + "\n" +
-                        "§7- Spawn Teleport: " + (config.spawnTeleportEnabled ? "§aEnabled" : "§cDisabled")),
+                        "§7- Spawn Teleport: " + (config.spawnTeleportEnabled ? "§aEnabled" : "§cDisabled") + "\n" +
+                        "§7- Bingo Items: " + (config.bingoItemsEnabled ? "§aEnabled" : "§cDisabled") + "\n" +
+                        "§7- Drop Multiplier: §e" + config.bingoItemsDropMultiplier + "x"),
                 false);
 
+        return 1;
+    }
+
+    private static int setDropMultiplier(CommandContext<CommandSourceStack> ctx) {
+        double multiplier = DoubleArgumentType.getDouble(ctx, "multiplier");
+        ModConfig config = ModConfig.getInstance();
+        config.bingoItemsDropMultiplier = multiplier;
+        BingoItemManager.getInstance().setGlobalDropChanceMultiplier(multiplier);
+        ModConfig.save(net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir());
+
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "§aDrop multiplier set to §e" + multiplier + "x"), true);
+        return 1;
+    }
+
+    private static int giveItem(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer player = EntityArgument.getPlayer(ctx, "player");
+        String itemId = StringArgumentType.getString(ctx, "item");
+
+        Optional<BingoItem> itemOpt = BingoItemRegistry.getById(itemId);
+        if (itemOpt.isEmpty()) {
+            ctx.getSource().sendFailure(Component.literal("§cUnknown item: " + itemId));
+            return 0;
+        }
+
+        BingoItemManager.getInstance().giveItem(player, itemOpt.get());
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "§aGave §e" + itemOpt.get().getName() + " §ato §e" + player.getName().getString()), true);
+        return 1;
+    }
+
+    private static int giveRandomItem(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer player = EntityArgument.getPlayer(ctx, "player");
+        BingoItemManager.getInstance().giveRandomItem(player);
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "§aGave random item to §e" + player.getName().getString()), true);
+        return 1;
+    }
+
+    private static int giveRandomItemWithRarity(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer player = EntityArgument.getPlayer(ctx, "player");
+        String rarityStr = StringArgumentType.getString(ctx, "rarity");
+
+        ItemRarity rarity;
+        try {
+            rarity = ItemRarity.valueOf(rarityStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            ctx.getSource().sendFailure(Component.literal("§cUnknown rarity: " + rarityStr));
+            return 0;
+        }
+
+        BingoItemManager.getInstance().giveRandomItem(player, rarity);
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "§aGave random §" + rarity.getColor().getChar() + rarity.getDisplayName() +
+                        " §aitem to §e" + player.getName().getString()),
+                true);
+        return 1;
+    }
+
+    private static int listItems(CommandContext<CommandSourceStack> ctx) {
+        Collection<BingoItem> items = BingoItemRegistry.getAllItems();
+
+        if (items.isEmpty()) {
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                    "§cNo Bingo Items registered. Register items in BingoItemRegistry.init()"), false);
+            return 1;
+        }
+
+        StringBuilder sb = new StringBuilder("§6Bingo Items (" + items.size() + "):\n");
+        for (BingoItem item : items) {
+            sb.append("§7- §")
+                    .append(item.getRarity().getColor().getChar())
+                    .append(item.getName())
+                    .append(" §8(")
+                    .append(item.getId())
+                    .append(")\n");
+        }
+
+        ctx.getSource().sendSuccess(() -> Component.literal(sb.toString()), false);
         return 1;
     }
 }
