@@ -8,6 +8,7 @@ import de.yoshlix.bingobackpack.item.BingoRewardSystem;
 import de.yoshlix.bingobackpack.item.items.Flight1Min;
 import de.yoshlix.bingobackpack.item.items.Flight5Min;
 import de.yoshlix.bingobackpack.item.items.Flight15Min;
+import de.yoshlix.bingobackpack.item.items.MobPheromone;
 import de.yoshlix.bingobackpack.item.items.TeamShield;
 import de.yoshlix.bingobackpack.item.items.TimeoutPlayer;
 import net.fabricmc.api.ModInitializer;
@@ -77,6 +78,9 @@ public class BingoBackpack implements ModInitializer {
 
 			// Team Shield expiry check
 			TeamShield.tickShieldExpiry(server);
+
+			// Mob Pheromone spawning
+			MobPheromone.tickPheromoneEffects(server);
 		});
 	}
 }

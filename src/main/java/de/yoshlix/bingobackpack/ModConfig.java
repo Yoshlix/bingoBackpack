@@ -34,11 +34,15 @@ public class ModConfig {
     public int timeoutPlayerDurationSeconds = 150;
     public int timeoutTeamDurationSeconds = 150;
 
+    public int levitationDurationSeconds = 10;
+    public int levitationAmplifier = 0;
+
     public int teamShieldDurationSeconds = 30;
 
     public int randomTeleportMinDistance = 500;
     public int randomTeleportMaxDistance = 5000;
     public int biomeTeleportSearchRadius = 10000;
+    public int structureSearchRadius = 2000;
 
     // Teleport Settings
     public int endTeleportSpawnX = 100;

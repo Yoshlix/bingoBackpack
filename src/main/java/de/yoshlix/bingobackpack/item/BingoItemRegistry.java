@@ -74,10 +74,22 @@ public class BingoItemRegistry {
         // Utility Items
         register(new BingoRadar());
         register(new TeamShield());
+        register(new StructureFinder());
+        register(new TimeWatch());
 
         // Special Items
+        register(new LevitationDart());
         register(new Lockdown());
         register(new Wildcard());
+
+        // Gambling / Chaos Items
+        register(new CoinFlipOfFate());
+        register(new SchrodingersChest());
+
+        // Utility Items (new)
+        register(new InstantFurnace());
+        register(new MobPheromone());
+        register(new TunnelDrill());
 
         // Legacy Example
 

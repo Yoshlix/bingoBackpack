@@ -29,7 +29,7 @@ public class SpeedBoost15Min extends BingoItem {
 
     @Override
     public String getDescription() {
-        return "Gibt dir Speed III für 15 Minuten.";
+        return "Gibt dir Speed III + Haste III für 15 Minuten.";
     }
 
     @Override
@@ -55,6 +55,15 @@ public class SpeedBoost15Min extends BingoItem {
                 true,
                 true));
 
+        // Also add Haste for faster mining
+        player.addEffect(new MobEffectInstance(
+                MobEffects.HASTE,
+                durationTicks,
+                ModConfig.getInstance().speedBoostAmplifier15Min,
+                false,
+                true,
+                true));
+
         int totalSeconds = durationTicks / 20;
         int minutes = totalSeconds / 60;
         int seconds = totalSeconds % 60;
@@ -67,7 +76,7 @@ public class SpeedBoost15Min extends BingoItem {
     @Override
     public List<Component> getExtraLore() {
         return List.of(
-                Component.literal("Speed III").withStyle(Style.EMPTY.withColor(ChatFormatting.AQUA)),
+                Component.literal("Speed III + Haste III").withStyle(Style.EMPTY.withColor(ChatFormatting.AQUA)),
                 Component.literal("Dauer: 15 Minuten").withStyle(ChatFormatting.GRAY));
     }
 
