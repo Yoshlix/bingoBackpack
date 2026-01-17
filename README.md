@@ -10,9 +10,6 @@ Shared inventory system for bingo teams accessible via `/backpack`. All team mem
 ### 🎁 Bingo Items (38 Unique Items)
 Special collectible items that drop from mobs with game-changing effects. Items are categorized by rarity (COMMON, UNCOMMON, RARE, EPIC, LEGENDARY) and can be found in-game or spawned via commands.
 
-### 🎭 Troll Effects
-Enable chaotic fun effects that can be toggled server-wide via `/trolls` commands.
-
 ### 🔧 Extended Bingo API
 Full programmatic access to game state, card manipulation, scoring, and team management.
 
@@ -105,23 +102,6 @@ Unique mechanics that don't fit other categories:
 3. Install [Fabric API](https://modrinth.com/mod/fabric-api) (required dependency)
 
 4. Start your server
-
----
-
-## 🎮 Commands
-
-### Backpack Commands
-- `/backpack` - Open your team's shared backpack
-- `/backpack items on` - Enable bingo item drops from mobs
-- `/backpack items off` - Disable bingo item drops
-- `/backpack items give <item> [player]` - Give a specific bingo item to a player
-- `/backpack items list` - List all available bingo items with their IDs
-
-### Troll Commands
-- `/trolls enable` - Enable troll effects
-- `/trolls disable` - Disable troll effects
-- `/trolls toggle` - Toggle troll effects on/off
-- `/trolls status` - Check current troll effect status
 
 ---
 
