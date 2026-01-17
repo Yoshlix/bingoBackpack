@@ -6,6 +6,7 @@ import de.yoshlix.bingobackpack.ModConfig;
 import de.yoshlix.bingobackpack.BingoBackpack;
 import me.jfenn.bingo.api.BingoApi;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -55,9 +56,9 @@ public class LevitationDart extends BingoItem {
 
         // Find targets
         List<ServerPlayer> enemies = new ArrayList<>();
-        var server = player.getServer();
-        if (server == null)
+        if (!(player.level() instanceof ServerLevel serverLevel))
             return false;
+        var server = serverLevel.getServer();
 
         for (var team : teams) {
             if (team.getId().equals(playerTeam.getId()))

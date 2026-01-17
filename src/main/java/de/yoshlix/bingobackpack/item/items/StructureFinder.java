@@ -44,17 +44,14 @@ public class StructureFinder extends BingoItem {
             return false;
         }
 
-        // List of structures to look for
+        // List of structures to look for (MC 1.21.x compatible tags)
         List<TagKey<Structure>> targetStructures = List.of(
                 StructureTags.VILLAGE,
                 StructureTags.MINESHAFT,
                 StructureTags.ON_TREASURE_MAPS, // Monuments, Mansions, etc.
-                StructureTags.STRONGHOLD,
-                StructureTags.DESERT_PYRAMID,
-                StructureTags.JUNGLE_TEMPLE,
-                StructureTags.SWAMP_HUT,
-                StructureTags.IGLOO,
-                StructureTags.RUINED_PORTAL);
+                StructureTags.RUINED_PORTAL,
+                StructureTags.ON_WOODLAND_EXPLORER_MAPS,
+                StructureTags.ON_OCEAN_EXPLORER_MAPS);
 
         BlockPos playerPos = player.blockPosition();
         int radius = ModConfig.getInstance().structureSearchRadius / 16; // Chunks? Actually the arg is usually radius
@@ -103,20 +100,14 @@ public class StructureFinder extends BingoItem {
             return "Dorf";
         if (tag == StructureTags.MINESHAFT)
             return "Minenschacht";
-        if (tag == StructureTags.STRONGHOLD)
-            return "Stronghold";
         if (tag == StructureTags.ON_TREASURE_MAPS)
             return "Schatz/Struktur";
-        if (tag == StructureTags.DESERT_PYRAMID)
-            return "Wüstenpyramide";
-        if (tag == StructureTags.JUNGLE_TEMPLE)
-            return "Dschungeltempel";
-        if (tag == StructureTags.SWAMP_HUT)
-            return "Hexenhütte";
-        if (tag == StructureTags.IGLOO)
-            return "Iglu";
         if (tag == StructureTags.RUINED_PORTAL)
             return "Ruiniertes Portal";
+        if (tag == StructureTags.ON_WOODLAND_EXPLORER_MAPS)
+            return "Waldanwesen";
+        if (tag == StructureTags.ON_OCEAN_EXPLORER_MAPS)
+            return "Ozeanmonument";
         return "Struktur";
     }
 }
