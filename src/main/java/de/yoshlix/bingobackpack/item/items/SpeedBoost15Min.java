@@ -2,6 +2,7 @@ package de.yoshlix.bingobackpack.item.items;
 
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
+import de.yoshlix.bingobackpack.ModConfig;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
@@ -15,9 +16,6 @@ import java.util.List;
  * Speed boost for 15 minutes.
  */
 public class SpeedBoost15Min extends BingoItem {
-
-    private static final int DURATION_SECONDS = 900;
-    private static final int AMPLIFIER = 2; // Speed III
 
     @Override
     public String getId() {
@@ -41,7 +39,7 @@ public class SpeedBoost15Min extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
-        int durationTicks = DURATION_SECONDS * 20;
+        int durationTicks = ModConfig.getInstance().speedBoostDuration15Min * 20;
 
         // Check if player already has speed effect and stack the duration
         var existingEffect = player.getEffect(MobEffects.SPEED);
@@ -52,7 +50,7 @@ public class SpeedBoost15Min extends BingoItem {
         player.addEffect(new MobEffectInstance(
                 MobEffects.SPEED,
                 durationTicks,
-                AMPLIFIER,
+                ModConfig.getInstance().speedBoostAmplifier15Min,
                 false,
                 true,
                 true));

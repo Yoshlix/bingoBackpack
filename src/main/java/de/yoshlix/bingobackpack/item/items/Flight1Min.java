@@ -3,6 +3,7 @@ package de.yoshlix.bingobackpack.item.items;
 import de.yoshlix.bingobackpack.BingoBackpack;
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
+import de.yoshlix.bingobackpack.ModConfig;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
@@ -16,8 +17,6 @@ import java.util.*;
  * Uses a scheduler to track and remove flight.
  */
 public class Flight1Min extends BingoItem {
-
-    private static final int DURATION_SECONDS = 60;
 
     // Track players with temporary flight
     private static final Map<UUID, Long> flightEndTimes = new HashMap<>();
@@ -51,7 +50,7 @@ public class Flight1Min extends BingoItem {
         player.onUpdateAbilities();
 
         // Stack flight time if already has flight
-        long additionalTime = DURATION_SECONDS * 1000L;
+        long additionalTime = ModConfig.getInstance().flightDuration1Min * 1000L;
         long newEndTime;
         Long existingEndTime = flightEndTimes.get(player.getUUID());
 
@@ -161,7 +160,8 @@ public class Flight1Min extends BingoItem {
     @Override
     public List<Component> getExtraLore() {
         return List.of(
-                Component.literal("Dauer: " + DURATION_SECONDS + " Sekunden").withStyle(ChatFormatting.GRAY));
+                Component.literal("Dauer: " + ModConfig.getInstance().flightDuration1Min + " Sekunden")
+                        .withStyle(ChatFormatting.GRAY));
     }
 
     @Override

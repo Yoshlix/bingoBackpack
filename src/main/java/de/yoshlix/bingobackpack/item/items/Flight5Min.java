@@ -2,6 +2,7 @@ package de.yoshlix.bingobackpack.item.items;
 
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
+import de.yoshlix.bingobackpack.ModConfig;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -13,8 +14,6 @@ import java.util.*;
  * Flight ability for 5 minutes.
  */
 public class Flight5Min extends BingoItem {
-
-    private static final int DURATION_SECONDS = 300;
 
     private static final Map<UUID, Long> flightEndTimes = new HashMap<>();
 
@@ -46,7 +45,7 @@ public class Flight5Min extends BingoItem {
         player.onUpdateAbilities();
 
         // Stack flight time if already has flight
-        long additionalTime = DURATION_SECONDS * 1000L;
+        long additionalTime = ModConfig.getInstance().flightDuration5Min * 1000L;
         long newEndTime;
         Long existingEndTime = flightEndTimes.get(player.getUUID());
 

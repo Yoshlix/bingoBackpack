@@ -76,7 +76,6 @@ public class BingoItemRegistry {
         register(new TeamShield());
 
         // Special Items
-        register(new FakeCompletion());
         register(new Lockdown());
         register(new Wildcard());
 

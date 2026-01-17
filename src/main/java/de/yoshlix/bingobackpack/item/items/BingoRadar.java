@@ -2,6 +2,7 @@ package de.yoshlix.bingobackpack.item.items;
 
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
+import de.yoshlix.bingobackpack.ModConfig;
 import me.jfenn.bingo.api.BingoApi;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -19,8 +20,6 @@ import java.util.List;
  * Scans nearby biomes and shows which ones contain resources for your tasks.
  */
 public class BingoRadar extends BingoItem {
-
-    private static final int SCAN_RADIUS = 500;
 
     @Override
     public String getId() {
@@ -89,8 +88,10 @@ public class BingoRadar extends BingoItem {
         var nearbyBiomes = new ArrayList<String>();
 
         // Sample biomes in a grid pattern
-        for (int x = -SCAN_RADIUS; x <= SCAN_RADIUS; x += 64) {
-            for (int z = -SCAN_RADIUS; z <= SCAN_RADIUS; z += 64) {
+        for (int x = -ModConfig.getInstance().bingoRadarScanRadius; x <= ModConfig
+                .getInstance().bingoRadarScanRadius; x += 64) {
+            for (int z = -ModConfig.getInstance().bingoRadarScanRadius; z <= ModConfig
+                    .getInstance().bingoRadarScanRadius; z += 64) {
                 BlockPos checkPos = playerPos.offset(x, 0, z);
                 Holder<Biome> biome = level.getBiome(checkPos);
                 String biomeName = biome.unwrapKey()
@@ -124,7 +125,8 @@ public class BingoRadar extends BingoItem {
         }
 
         player.sendSystemMessage(Component.literal(""));
-        player.sendSystemMessage(Component.literal("§a§lBiome in der Nähe (" + SCAN_RADIUS + " Blöcke):"));
+        player.sendSystemMessage(Component
+                .literal("§a§lBiome in der Nähe (" + ModConfig.getInstance().bingoRadarScanRadius + " Blöcke):"));
 
         shown = 0;
         for (String biome : nearbyBiomes) {

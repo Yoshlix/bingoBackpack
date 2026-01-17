@@ -2,6 +2,7 @@ package de.yoshlix.bingobackpack.item.items;
 
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
+import de.yoshlix.bingobackpack.ModConfig;
 import me.jfenn.bingo.api.BingoApi;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
@@ -19,8 +20,6 @@ import java.util.UUID;
 public class ItemSwap extends BingoItem {
 
     private final Random random = new Random();
-    private static final int MIN_ITEMS = 3;
-    private static final int MAX_ITEMS = 8;
 
     @Override
     public String getId() {
@@ -34,7 +33,8 @@ public class ItemSwap extends BingoItem {
 
     @Override
     public String getDescription() {
-        return "Tauscht " + MIN_ITEMS + "-" + MAX_ITEMS + " zufällige Items mit einem Gegner.";
+        return "Tauscht " + ModConfig.getInstance().itemSwapMin + "-" + ModConfig.getInstance().itemSwapMax
+                + " zufällige Items mit einem Gegner.";
     }
 
     @Override
@@ -86,7 +86,8 @@ public class ItemSwap extends BingoItem {
         ServerPlayer target = enemyPlayers.get(random.nextInt(enemyPlayers.size()));
 
         // Determine number of items to swap
-        int itemsToSwap = MIN_ITEMS + random.nextInt(MAX_ITEMS - MIN_ITEMS + 1);
+        int itemsToSwap = ModConfig.getInstance().itemSwapMin
+                + random.nextInt(ModConfig.getInstance().itemSwapMax - ModConfig.getInstance().itemSwapMin + 1);
 
         // Find non-empty slots from both players
         List<Integer> playerNonEmptySlots = new ArrayList<>();
@@ -159,7 +160,8 @@ public class ItemSwap extends BingoItem {
     @Override
     public List<Component> getExtraLore() {
         return List.of(
-                Component.literal("§7Tauscht " + MIN_ITEMS + "-" + MAX_ITEMS + " zufällige Items"),
+                Component.literal("§7Tauscht " + ModConfig.getInstance().itemSwapMin + "-"
+                        + ModConfig.getInstance().itemSwapMax + " Items"),
                 Component.literal("§7Zufälliger gegnerischer Spieler"));
     }
 

@@ -2,6 +2,7 @@ package de.yoshlix.bingobackpack.item.items;
 
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
+import de.yoshlix.bingobackpack.ModConfig;
 import me.jfenn.bingo.api.BingoApi;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
@@ -19,8 +20,6 @@ import java.util.UUID;
 public class DeleteEnemyItems extends BingoItem {
 
     private final Random random = new Random();
-    private static final int MIN_ITEMS = 2;
-    private static final int MAX_ITEMS = 5;
 
     @Override
     public String getId() {
@@ -34,7 +33,8 @@ public class DeleteEnemyItems extends BingoItem {
 
     @Override
     public String getDescription() {
-        return "Zerstört " + MIN_ITEMS + "-" + MAX_ITEMS + " Items eines zufälligen Gegners.";
+        return "Zerstört " + ModConfig.getInstance().deleteEnemyItemsMin + "-"
+                + ModConfig.getInstance().deleteEnemyItemsMax + " Items eines zufälligen Gegners.";
     }
 
     @Override
@@ -86,7 +86,8 @@ public class DeleteEnemyItems extends BingoItem {
         ServerPlayer target = enemyPlayers.get(random.nextInt(enemyPlayers.size()));
 
         // Determine number of items to delete
-        int itemsToDelete = MIN_ITEMS + random.nextInt(MAX_ITEMS - MIN_ITEMS + 1);
+        int itemsToDelete = ModConfig.getInstance().deleteEnemyItemsMin + random
+                .nextInt(ModConfig.getInstance().deleteEnemyItemsMax - ModConfig.getInstance().deleteEnemyItemsMin + 1);
 
         // Find non-empty slots (excluding unbreakable items from starter kit)
         List<Integer> nonEmptySlots = new ArrayList<>();
@@ -135,7 +136,8 @@ public class DeleteEnemyItems extends BingoItem {
     public List<Component> getExtraLore() {
         return List.of(
                 Component.literal("§c§lBÖSARTIG!"),
-                Component.literal("§7Zerstört " + MIN_ITEMS + "-" + MAX_ITEMS + " Items"));
+                Component.literal("§7Zerstört " + ModConfig.getInstance().deleteEnemyItemsMin + "-"
+                        + ModConfig.getInstance().deleteEnemyItemsMax + " Items"));
     }
 
     @Override

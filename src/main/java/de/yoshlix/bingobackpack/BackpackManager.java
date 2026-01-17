@@ -1,5 +1,6 @@
 package de.yoshlix.bingobackpack;
 
+import de.yoshlix.bingobackpack.item.items.Lockdown;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -24,7 +25,6 @@ import java.util.Map;
 
 public class BackpackManager {
     private static final String BACKPACKS_DIR = "bingobackpack";
-    private static final int BACKPACK_SIZE = 54; // Double chest size
 
     // Map of team name to active container (for syncing between players)
     private final Map<String, SimpleContainer> activeContainers = new HashMap<>();
@@ -43,7 +43,17 @@ public class BackpackManager {
     }
 
     public void openBackpack(ServerPlayer player, String teamName) {
+        if (Lockdown.isLocked(player.getUUID())) {
+            int remaining = Lockdown.getRemainingLockdownSeconds(player.getUUID());
+            player.sendSystemMessage(
+                    Component.literal("§cDein Backpack ist gesperrt! Verbleibende Zeit: " + remaining + "s"));
+            return;
+        }
+
         SimpleContainer container = getOrCreateContainer(teamName);
+
+        if (container == null)
+            return;
 
         player.openMenu(new SimpleMenuProvider(
                 (syncId, playerInventory, playerEntity) -> new ChestMenu(MenuType.GENERIC_9x6, syncId, playerInventory,
@@ -59,7 +69,7 @@ public class BackpackManager {
         }
 
         // Create new container and load saved data
-        container = new BackpackContainer(BACKPACK_SIZE, teamName);
+        container = new BackpackContainer(ModConfig.getInstance().backpackSize, teamName);
         loadContainer(container, teamName);
 
         activeContainers.put(teamName, container);

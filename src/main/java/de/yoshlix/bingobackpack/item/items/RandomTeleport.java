@@ -2,6 +2,7 @@ package de.yoshlix.bingobackpack.item.items;
 
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
+import de.yoshlix.bingobackpack.ModConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -18,9 +19,6 @@ import java.util.Random;
 public class RandomTeleport extends BingoItem {
 
     private final Random random = new Random();
-    private static final int MIN_DISTANCE = 500;
-    private static final int MAX_DISTANCE = 5000;
-    private static final int NETHER_CEILING_Y = 127; // Nether ceiling starts at Y=127
 
     @Override
     public String getId() {
@@ -48,7 +46,8 @@ public class RandomTeleport extends BingoItem {
 
         // Calculate random offset
         double angle = random.nextDouble() * 2 * Math.PI;
-        int distance = MIN_DISTANCE + random.nextInt(MAX_DISTANCE - MIN_DISTANCE);
+        int distance = ModConfig.getInstance().randomTeleportMinDistance + random.nextInt(
+                ModConfig.getInstance().randomTeleportMaxDistance - ModConfig.getInstance().randomTeleportMinDistance);
 
         int newX = (int) (player.getX() + Math.cos(angle) * distance);
         int newZ = (int) (player.getZ() + Math.sin(angle) * distance);
@@ -64,7 +63,9 @@ public class RandomTeleport extends BingoItem {
             // Try a few more times with different positions
             for (int i = 0; i < 10; i++) {
                 angle = random.nextDouble() * 2 * Math.PI;
-                distance = MIN_DISTANCE + random.nextInt(MAX_DISTANCE - MIN_DISTANCE);
+                distance = ModConfig.getInstance().randomTeleportMinDistance
+                        + random.nextInt(ModConfig.getInstance().randomTeleportMaxDistance
+                                - ModConfig.getInstance().randomTeleportMinDistance);
                 newX = (int) (player.getX() + Math.cos(angle) * distance);
                 newZ = (int) (player.getZ() + Math.sin(angle) * distance);
 
@@ -86,8 +87,8 @@ public class RandomTeleport extends BingoItem {
 
             if (isNether) {
                 // In Nether, don't use heightmap (would put us on ceiling)
-                // Instead, try Y=64 as a reasonable middle ground
-                safeY = 64;
+                // Instead, use configured nether fallback Y
+                safeY = ModConfig.getInstance().netherFallbackY;
             } else {
                 safeY = Math.max(heightmapY + 1, level.getSeaLevel() + 1);
             }
@@ -123,7 +124,7 @@ public class RandomTeleport extends BingoItem {
         }
 
         // Check multiple positions around the surface
-        for (int yOffset = 0; yOffset <= 10; yOffset++) {
+        for (int yOffset = 0; yOffset <= ModConfig.getInstance().safePosSearchRange; yOffset++) {
             int testY = surfaceY + yOffset;
 
             if (isSafePosition(level, pos.getX(), testY, pos.getZ())) {
@@ -140,7 +141,7 @@ public class RandomTeleport extends BingoItem {
      */
     private int findSafeYNether(ServerLevel level, BlockPos pos) {
         int minY = level.getMinY();
-        int maxSafeY = NETHER_CEILING_Y - 2; // Stay well below the ceiling
+        int maxSafeY = ModConfig.getInstance().netherCeilingY - 2; // Stay well below the ceiling
 
         // Scan from bottom to top, looking for the first safe spot
         for (int y = minY + 1; y <= maxSafeY; y++) {
@@ -188,7 +189,8 @@ public class RandomTeleport extends BingoItem {
     @Override
     public List<Component> getExtraLore() {
         return List.of(
-                Component.literal("§7Distanz: " + MIN_DISTANCE + "-" + MAX_DISTANCE + " Blöcke"));
+                Component.literal("§7Distanz: " + ModConfig.getInstance().randomTeleportMinDistance + "-"
+                        + ModConfig.getInstance().randomTeleportMaxDistance + " Blöcke"));
     }
 
     @Override

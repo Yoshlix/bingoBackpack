@@ -2,6 +2,7 @@ package de.yoshlix.bingobackpack.item.items;
 
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
+import de.yoshlix.bingobackpack.ModConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
@@ -21,7 +22,6 @@ import java.util.Random;
 public class BiomeTeleportRandom extends BingoItem {
 
     private final Random random = new Random();
-    private static final int SEARCH_RADIUS = 10000;
 
     @Override
     public String getId() {
@@ -71,7 +71,7 @@ public class BiomeTeleportRandom extends BingoItem {
         var found = level.findClosestBiome3d(
                 b -> b.is(targetKey),
                 playerPos,
-                SEARCH_RADIUS,
+                ModConfig.getInstance().biomeTeleportSearchRadius,
                 32,
                 64);
 
@@ -81,7 +81,7 @@ public class BiomeTeleportRandom extends BingoItem {
             found = level.findClosestBiome3d(
                     b -> !b.equals(currentBiome),
                     playerPos,
-                    SEARCH_RADIUS,
+                    ModConfig.getInstance().biomeTeleportSearchRadius,
                     32,
                     64);
 
@@ -126,7 +126,8 @@ public class BiomeTeleportRandom extends BingoItem {
     @Override
     public List<Component> getExtraLore() {
         return List.of(
-                Component.literal("§7Sucht im Umkreis von " + SEARCH_RADIUS + " Blöcken"));
+                Component.literal(
+                        "§7Sucht im Umkreis von " + ModConfig.getInstance().biomeTeleportSearchRadius + " Blöcken"));
     }
 
     @Override

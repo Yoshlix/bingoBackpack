@@ -1,6 +1,7 @@
 package de.yoshlix.bingobackpack.item;
 
 import de.yoshlix.bingobackpack.BingoBackpack;
+import de.yoshlix.bingobackpack.ModConfig;
 import de.yoshlix.bingobackpack.item.items.Lockdown;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -32,8 +33,7 @@ public class BingoItemManager {
     private double globalDropChanceMultiplier = 1.0;
     private boolean dropsEnabled = true;
 
-    // Cooldown for mob drops (60 seconds)
-    private static final long DROP_COOLDOWN_MS = 60 * 1000L;
+    // Cooldown tracking for mob drops
     private final Map<UUID, Long> lastDropTime = new HashMap<>();
 
     public static BingoItemManager getInstance() {
@@ -109,7 +109,7 @@ public class BingoItemManager {
         // Check cooldown
         UUID playerId = serverPlayer.getUUID();
         Long lastDrop = lastDropTime.get(playerId);
-        if (lastDrop != null && System.currentTimeMillis() - lastDrop < DROP_COOLDOWN_MS) {
+        if (lastDrop != null && System.currentTimeMillis() - lastDrop < ModConfig.getInstance().dropCooldownMs) {
             return; // Still on cooldown
         }
 

@@ -3,6 +3,7 @@ package de.yoshlix.bingobackpack.item.items;
 import de.yoshlix.bingobackpack.BingoBackpack;
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
+import de.yoshlix.bingobackpack.ModConfig;
 import me.jfenn.bingo.api.BingoApi;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.ClickEvent;
@@ -23,7 +24,6 @@ public class TimeoutPlayer extends BingoItem {
 
     private static final Map<UUID, List<ServerPlayer>> pendingTimeouts = new HashMap<>();
     private static final Map<UUID, Long> timedOutPlayers = new HashMap<>();
-    private static final int TIMEOUT_DURATION_SECONDS = 150;
 
     @Override
     public String getId() {
@@ -37,7 +37,8 @@ public class TimeoutPlayer extends BingoItem {
 
     @Override
     public String getDescription() {
-        return "Friert einen gewählten Gegner für " + TIMEOUT_DURATION_SECONDS + " Sekunden ein.";
+        return "Friert einen gewählten Gegner für " + ModConfig.getInstance().timeoutPlayerDurationSeconds
+                + " Sekunden ein.";
     }
 
     @Override
@@ -144,11 +145,12 @@ public class TimeoutPlayer extends BingoItem {
         applyTimeout(target);
 
         player.sendSystemMessage(Component.literal("§c§l❄ §r" + target.getName().getString() +
-                " §7wurde für " + TIMEOUT_DURATION_SECONDS + " Sekunden eingefroren!"));
+                " §7wurde für " + ModConfig.getInstance().timeoutPlayerDurationSeconds + " Sekunden eingefroren!"));
 
         target.sendSystemMessage(Component.literal("§c§l❄ DU WURDEST EINGEFROREN! ❄"));
         target.sendSystemMessage(Component.literal("§7Von: §e" + player.getName().getString()));
-        target.sendSystemMessage(Component.literal("§7Dauer: §c" + TIMEOUT_DURATION_SECONDS + " Sekunden"));
+        target.sendSystemMessage(
+                Component.literal("§7Dauer: §c" + ModConfig.getInstance().timeoutPlayerDurationSeconds + " Sekunden"));
 
         ((net.minecraft.server.level.ServerLevel) player.level()).getServer().getPlayerList().broadcastSystemMessage(
                 Component.literal("§c§l❄ §e" + target.getName().getString() +
@@ -161,7 +163,7 @@ public class TimeoutPlayer extends BingoItem {
 
     private static void applyTimeout(ServerPlayer target) {
         // Apply slowness, mining fatigue, weakness, blindness
-        int durationTicks = TIMEOUT_DURATION_SECONDS * 20;
+        int durationTicks = ModConfig.getInstance().timeoutPlayerDurationSeconds * 20;
 
         target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, durationTicks, 255, false, false, true));
         target.addEffect(new MobEffectInstance(MobEffects.MINING_FATIGUE, durationTicks, 255, false, false, true));
@@ -185,7 +187,8 @@ public class TimeoutPlayer extends BingoItem {
             Flight15Min.clearFlightTime(target.getUUID());
         }
 
-        timedOutPlayers.put(target.getUUID(), System.currentTimeMillis() + (TIMEOUT_DURATION_SECONDS * 1000L));
+        timedOutPlayers.put(target.getUUID(),
+                System.currentTimeMillis() + (ModConfig.getInstance().timeoutPlayerDurationSeconds * 1000L));
     }
 
     public static boolean isTimedOut(UUID playerId) {
@@ -234,7 +237,8 @@ public class TimeoutPlayer extends BingoItem {
     @Override
     public List<Component> getExtraLore() {
         return List.of(
-                Component.literal("§c❄ Einfrieren für " + TIMEOUT_DURATION_SECONDS + " Sekunden"),
+                Component.literal(
+                        "§c❄ Einfrieren für " + ModConfig.getInstance().timeoutPlayerDurationSeconds + " Sekunden"),
                 Component.literal("§7Kann nicht bewegen oder interagieren"));
     }
 

@@ -1,5 +1,6 @@
 package de.yoshlix.bingobackpack.item;
 
+import de.yoshlix.bingobackpack.ModConfig;
 import net.minecraft.ChatFormatting;
 
 /**
@@ -7,20 +8,18 @@ import net.minecraft.ChatFormatting;
  * Each rarity has different drop chances and visual styling.
  */
 public enum ItemRarity {
-    COMMON("Common", ChatFormatting.WHITE, 0.05), // 5% base drop chance
-    UNCOMMON("Uncommon", ChatFormatting.GREEN, 0.025), // 2.5% base drop chance
-    RARE("Rare", ChatFormatting.BLUE, 0.01), // 1% base drop chance
-    EPIC("Epic", ChatFormatting.DARK_PURPLE, 0.003), // 0.3% base drop chance
-    LEGENDARY("Legendary", ChatFormatting.GOLD, 0.001); // 0.1% base drop chance
+    COMMON("Common", ChatFormatting.WHITE),
+    UNCOMMON("Uncommon", ChatFormatting.GREEN),
+    RARE("Rare", ChatFormatting.BLUE),
+    EPIC("Epic", ChatFormatting.DARK_PURPLE),
+    LEGENDARY("Legendary", ChatFormatting.GOLD);
 
     private final String displayName;
     private final ChatFormatting color;
-    private final double baseDropChance;
 
-    ItemRarity(String displayName, ChatFormatting color, double baseDropChance) {
+    ItemRarity(String displayName, ChatFormatting color) {
         this.displayName = displayName;
         this.color = color;
-        this.baseDropChance = baseDropChance;
     }
 
     public String getDisplayName() {
@@ -33,9 +32,17 @@ public enum ItemRarity {
 
     /**
      * Base drop chance when killing mobs (0.0 - 1.0)
+     * Values are loaded from ModConfig for easy customization.
      */
     public double getBaseDropChance() {
-        return baseDropChance;
+        ModConfig config = ModConfig.getInstance();
+        return switch (this) {
+            case COMMON -> config.dropChanceCommon;
+            case UNCOMMON -> config.dropChanceUncommon;
+            case RARE -> config.dropChanceRare;
+            case EPIC -> config.dropChanceEpic;
+            case LEGENDARY -> config.dropChanceLegendary;
+        };
     }
 
     /**

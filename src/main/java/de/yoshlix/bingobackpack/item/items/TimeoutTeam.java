@@ -2,6 +2,7 @@ package de.yoshlix.bingobackpack.item.items;
 
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
+import de.yoshlix.bingobackpack.ModConfig;
 import me.jfenn.bingo.api.BingoApi;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -16,8 +17,6 @@ import java.util.*;
  */
 public class TimeoutTeam extends BingoItem {
 
-    private static final int TIMEOUT_DURATION_SECONDS = 150;
-
     @Override
     public String getId() {
         return "timeout_team";
@@ -30,7 +29,8 @@ public class TimeoutTeam extends BingoItem {
 
     @Override
     public String getDescription() {
-        return "Friert ein zufälliges gegnerisches Team für " + TIMEOUT_DURATION_SECONDS + " Sekunden ein.";
+        return "Friert ein zufälliges gegnerisches Team für " + ModConfig.getInstance().timeoutTeamDurationSeconds
+                + " Sekunden ein.";
     }
 
     @Override
@@ -79,7 +79,8 @@ public class TimeoutTeam extends BingoItem {
 
                 target.sendSystemMessage(Component.literal("§c§l❄ DEIN TEAM WURDE EINGEFROREN! ❄"));
                 target.sendSystemMessage(Component.literal("§7Von: §e" + player.getName().getString()));
-                target.sendSystemMessage(Component.literal("§7Dauer: §c" + TIMEOUT_DURATION_SECONDS + " Sekunden"));
+                target.sendSystemMessage(Component
+                        .literal("§7Dauer: §c" + ModConfig.getInstance().timeoutTeamDurationSeconds + " Sekunden"));
 
                 frozenCount++;
             }
@@ -94,7 +95,8 @@ public class TimeoutTeam extends BingoItem {
                             .append(Component.literal("\n§e" + player.getName().getString()))
                             .append(Component.literal(" §chat Team §e" + targetTeam.getId() + " §ceingefroren!"))
                             .append(Component.literal(
-                                    "\n§7(" + frozenCount + " Spieler für " + TIMEOUT_DURATION_SECONDS + " Sekunden)")),
+                                    "\n§7(" + frozenCount + " Spieler für "
+                                            + ModConfig.getInstance().timeoutTeamDurationSeconds + " Sekunden)")),
                     false);
 
             return true;
@@ -105,7 +107,7 @@ public class TimeoutTeam extends BingoItem {
     }
 
     private void applyTimeout(ServerPlayer target) {
-        int durationTicks = TIMEOUT_DURATION_SECONDS * 20;
+        int durationTicks = ModConfig.getInstance().timeoutTeamDurationSeconds * 20;
 
         target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, durationTicks, 255, false, false, true));
         target.addEffect(new MobEffectInstance(MobEffects.MINING_FATIGUE, durationTicks, 255, false, false, true));
@@ -134,7 +136,7 @@ public class TimeoutTeam extends BingoItem {
         return List.of(
                 Component.literal("§c§lEXTREM MÄCHTIG!"),
                 Component.literal("§c❄ Friert ALLE Teammitglieder ein"),
-                Component.literal("§7Dauer: " + TIMEOUT_DURATION_SECONDS + " Sekunden"));
+                Component.literal("§7Dauer: " + ModConfig.getInstance().timeoutTeamDurationSeconds + " Sekunden"));
     }
 
     @Override

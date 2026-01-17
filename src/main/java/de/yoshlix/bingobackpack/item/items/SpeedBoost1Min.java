@@ -2,6 +2,7 @@ package de.yoshlix.bingobackpack.item.items;
 
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
+import de.yoshlix.bingobackpack.ModConfig;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
@@ -15,9 +16,6 @@ import java.util.List;
  * Speed boost for 1 minute.
  */
 public class SpeedBoost1Min extends BingoItem {
-
-    private static final int DURATION_SECONDS = 60;
-    private static final int AMPLIFIER = 1; // Speed II
 
     @Override
     public String getId() {
@@ -41,7 +39,7 @@ public class SpeedBoost1Min extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
-        int durationTicks = DURATION_SECONDS * 20;
+        int durationTicks = ModConfig.getInstance().speedBoostDuration1Min * 20;
 
         // Check if player already has speed effect and stack the duration
         var existingEffect = player.getEffect(MobEffects.SPEED);
@@ -52,7 +50,7 @@ public class SpeedBoost1Min extends BingoItem {
         player.addEffect(new MobEffectInstance(
                 MobEffects.SPEED,
                 durationTicks,
-                AMPLIFIER,
+                ModConfig.getInstance().speedBoostAmplifier1Min,
                 false,
                 true,
                 true));
@@ -68,7 +66,8 @@ public class SpeedBoost1Min extends BingoItem {
     public List<Component> getExtraLore() {
         return List.of(
                 Component.literal("Speed II").withStyle(Style.EMPTY.withColor(ChatFormatting.AQUA)),
-                Component.literal("Dauer: " + DURATION_SECONDS + " Sekunden").withStyle(ChatFormatting.GRAY));
+                Component.literal("Dauer: " + ModConfig.getInstance().speedBoostDuration1Min + " Sekunden")
+                        .withStyle(ChatFormatting.GRAY));
     }
 
     @Override

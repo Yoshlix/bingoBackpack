@@ -2,6 +2,7 @@ package de.yoshlix.bingobackpack.item.items;
 
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
+import de.yoshlix.bingobackpack.ModConfig;
 import me.jfenn.bingo.api.BingoApi;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.ClickEvent;
@@ -20,7 +21,6 @@ public class Lockdown extends BingoItem {
 
     private static final Map<UUID, List<ServerPlayer>> pendingLockdowns = new HashMap<>();
     private static final Map<UUID, Long> lockedPlayers = new HashMap<>();
-    private static final int LOCKDOWN_DURATION_SECONDS = 120; // 2 minutes
 
     @Override
     public String getId() {
@@ -34,7 +34,8 @@ public class Lockdown extends BingoItem {
 
     @Override
     public String getDescription() {
-        return "Sperrt den Backpack eines Gegners für " + LOCKDOWN_DURATION_SECONDS + " Sekunden.";
+        return "Sperrt den Backpack eines Gegners für " + ModConfig.getInstance().lockdownDurationSeconds
+                + " Sekunden.";
     }
 
     @Override
@@ -204,8 +205,9 @@ public class Lockdown extends BingoItem {
     }
 
     private static void applyLockdown(ServerPlayer player) {
-        long endTime = System.currentTimeMillis() + (LOCKDOWN_DURATION_SECONDS * 1000L);
+        long endTime = System.currentTimeMillis() + (ModConfig.getInstance().lockdownDurationSeconds * 1000L);
         lockedPlayers.put(player.getUUID(), endTime);
+        player.closeContainer();
     }
 
     private static void consumeItem(ServerPlayer player) {
@@ -250,7 +252,7 @@ public class Lockdown extends BingoItem {
     public List<Component> getExtraLore() {
         return List.of(
                 Component.literal("§7Sperrt Gegner-Backpack"),
-                Component.literal("§7Dauer: §c" + LOCKDOWN_DURATION_SECONDS + " Sekunden"));
+                Component.literal("§7Dauer: §c" + ModConfig.getInstance().lockdownDurationSeconds + " Sekunden"));
     }
 
     @Override

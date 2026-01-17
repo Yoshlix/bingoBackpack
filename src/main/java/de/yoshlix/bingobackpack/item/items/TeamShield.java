@@ -2,6 +2,7 @@ package de.yoshlix.bingobackpack.item.items;
 
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
+import de.yoshlix.bingobackpack.ModConfig;
 import me.jfenn.bingo.api.BingoApi;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -16,8 +17,6 @@ import java.util.*;
  * shielded players.
  */
 public class TeamShield extends BingoItem {
-
-    private static final int SHIELD_DURATION_SECONDS = 30;
 
     // Map of team ID -> shield expiry time
     private static final Map<String, Long> shieldedTeams = new HashMap<>();
@@ -34,7 +33,8 @@ public class TeamShield extends BingoItem {
 
     @Override
     public String getDescription() {
-        return "Schützt dein Team 30 Sekunden vor feindlichen Items.";
+        return "Schützt dein Team " + ModConfig.getInstance().teamShieldDurationSeconds
+                + " Sekunden vor feindlichen Items.";
     }
 
     @Override
@@ -67,7 +67,7 @@ public class TeamShield extends BingoItem {
         }
 
         // Activate shield
-        long expiryTime = System.currentTimeMillis() + (SHIELD_DURATION_SECONDS * 1000L);
+        long expiryTime = System.currentTimeMillis() + (ModConfig.getInstance().teamShieldDurationSeconds * 1000L);
         shieldedTeams.put(teamId, expiryTime);
 
         // Notify all team members
@@ -77,7 +77,8 @@ public class TeamShield extends BingoItem {
             if (member != null) {
                 member.sendSystemMessage(Component.literal("§a§l🛡 TEAM SCHILD AKTIVIERT! 🛡"));
                 member.sendSystemMessage(Component
-                        .literal("§7Euer Team ist für §e" + SHIELD_DURATION_SECONDS + " Sekunden §7geschützt!"));
+                        .literal("§7Euer Team ist für §e" + ModConfig.getInstance().teamShieldDurationSeconds
+                                + " Sekunden §7geschützt!"));
                 member.sendSystemMessage(Component.literal("§7Aktiviert von: §e" + player.getName().getString()));
             }
         }
@@ -85,7 +86,7 @@ public class TeamShield extends BingoItem {
         // Broadcast to server
         server.getPlayerList().broadcastSystemMessage(
                 Component.literal("§a§l🛡 §eTeam " + teamId + " §ahat einen Schild aktiviert! §7("
-                        + SHIELD_DURATION_SECONDS + "s)"),
+                        + ModConfig.getInstance().teamShieldDurationSeconds + "s)"),
                 false);
 
         // Play shield sound to all team members
@@ -191,6 +192,6 @@ public class TeamShield extends BingoItem {
                 Component.literal("§c• Kill-Items"),
                 Component.literal("§c• Swap-Items"),
                 Component.literal("§c• Timeout-Items"),
-                Component.literal("§7Dauer: §e" + SHIELD_DURATION_SECONDS + " Sekunden"));
+                Component.literal("§7Dauer: §e" + ModConfig.getInstance().teamShieldDurationSeconds + " Sekunden"));
     }
 }

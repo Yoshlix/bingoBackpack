@@ -32,7 +32,6 @@ public class BingoIntegration {
     private final Map<UUID, String> playersWithBackpack = new HashMap<>();
 
     private int tickCounter = 0;
-    private static final int CHECK_INTERVAL = 20; // Check every second (20 ticks)
 
     public static BingoIntegration getInstance() {
         if (instance == null) {
@@ -65,7 +64,7 @@ public class BingoIntegration {
             return;
 
         tickCounter++;
-        if (tickCounter < CHECK_INTERVAL)
+        if (tickCounter < ModConfig.getInstance().bingoCheckIntervalTicks)
             return;
         tickCounter = 0;
 

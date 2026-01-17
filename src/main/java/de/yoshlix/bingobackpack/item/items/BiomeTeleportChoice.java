@@ -2,6 +2,7 @@ package de.yoshlix.bingobackpack.item.items;
 
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
+import de.yoshlix.bingobackpack.ModConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
@@ -24,7 +25,6 @@ import java.util.*;
 public class BiomeTeleportChoice extends BingoItem {
 
     private static final Map<UUID, List<Holder<Biome>>> pendingBiomeSelections = new HashMap<>();
-    private static final int SEARCH_RADIUS = 10000;
 
     // Common biomes to show in the selection
     private static final List<String> COMMON_BIOMES = List.of(
@@ -140,7 +140,7 @@ public class BiomeTeleportChoice extends BingoItem {
         var found = level.findClosestBiome3d(
                 b -> targetBiome.unwrapKey().map(b::is).orElse(false),
                 player.blockPosition(),
-                SEARCH_RADIUS,
+                ModConfig.getInstance().biomeTeleportSearchRadius,
                 32,
                 64);
 

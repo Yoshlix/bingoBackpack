@@ -1,6 +1,7 @@
 package de.yoshlix.bingobackpack.item;
 
 import de.yoshlix.bingobackpack.BingoBackpack;
+import de.yoshlix.bingobackpack.ModConfig;
 import me.jfenn.bingo.api.BingoApi;
 import me.jfenn.bingo.api.data.BingoGameStatus;
 import me.jfenn.bingo.api.data.IBingoObjective;
@@ -29,8 +30,6 @@ public class BingoRewardSystem {
 
     // Tracking
     private int tickCounter = 0;
-    private static final int RANDOM_GIFT_INTERVAL = 30 * 20; // 30 seconds in ticks
-    private static final double RANDOM_GIFT_CHANCE = 0.05; // 5% chance every 30 seconds
 
     // Track completed lines per team to detect new completions
     private final Map<String, Integer> teamCompletedLines = new HashMap<>();
@@ -38,14 +37,8 @@ public class BingoRewardSystem {
     // Track completed objectives to detect new completions
     private final Map<String, Set<String>> teamCompletedObjectives = new HashMap<>();
 
-    // Track objective count for milestone rewards (every 5 tasks = 1 item)
+    // Track objective count for milestone rewards
     private final Map<String, Integer> teamObjectiveCount = new HashMap<>();
-    private static final int MILESTONE_INTERVAL = 5; // Every 5 tasks = 1 reward
-
-    // Difficulty mapping (bingo fields have implicit difficulty based on
-    // position/type)
-    // Since the API doesn't expose difficulty directly, we'll use a random approach
-    private static final double TASK_COMPLETE_ITEM_CHANCE = 0.15; // 15% chance on task complete
 
     public static BingoRewardSystem getInstance() {
         if (instance == null) {
@@ -83,8 +76,8 @@ public class BingoRewardSystem {
 
         tickCounter++;
 
-        // Check for random gifts every 30 seconds
-        if (tickCounter >= RANDOM_GIFT_INTERVAL) {
+        // Check for random gifts every configured interval
+        if (tickCounter >= ModConfig.getInstance().randomGiftIntervalTicks) {
             tickCounter = 0;
             checkRandomGift(server);
         }
@@ -98,7 +91,7 @@ public class BingoRewardSystem {
      * get an item.
      */
     private void checkRandomGift(MinecraftServer server) {
-        if (random.nextDouble() >= RANDOM_GIFT_CHANCE) {
+        if (random.nextDouble() >= ModConfig.getInstance().randomGiftChance) {
             return;
         }
 
@@ -188,13 +181,14 @@ public class BingoRewardSystem {
                 int newCount = currentCompleted.size();
 
                 // Calculate milestones crossed
-                int previousMilestone = previousCount / MILESTONE_INTERVAL;
-                int newMilestone = newCount / MILESTONE_INTERVAL;
+                int milestoneInterval = ModConfig.getInstance().milestoneInterval;
+                int previousMilestone = previousCount / milestoneInterval;
+                int newMilestone = newCount / milestoneInterval;
 
                 if (newMilestone > previousMilestone) {
                     int milestonesReached = newMilestone - previousMilestone;
                     for (int i = 0; i < milestonesReached; i++) {
-                        int milestoneNumber = (previousMilestone + i + 1) * MILESTONE_INTERVAL;
+                        int milestoneNumber = (previousMilestone + i + 1) * milestoneInterval;
                         onMilestoneReached(server, team, milestoneNumber);
                     }
                 }
@@ -261,7 +255,7 @@ public class BingoRewardSystem {
      */
     private void onObjectiveCompleted(MinecraftServer server, IBingoTeam team, IBingoObjective objective) {
         // Random chance to get an item
-        if (random.nextDouble() >= TASK_COMPLETE_ITEM_CHANCE) {
+        if (random.nextDouble() >= ModConfig.getInstance().taskCompleteItemChance) {
             return;
         }
 

@@ -2,6 +2,7 @@ package de.yoshlix.bingobackpack.item.items;
 
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
+import de.yoshlix.bingobackpack.ModConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -15,11 +16,6 @@ import java.util.List;
  * Teleports the player to the End dimension.
  */
 public class EndTeleport extends BingoItem {
-
-    // End spawn platform location
-    private static final int END_SPAWN_X = 100;
-    private static final int END_SPAWN_Y = 49;
-    private static final int END_SPAWN_Z = 0;
 
     @Override
     public String getId() {
@@ -59,13 +55,15 @@ public class EndTeleport extends BingoItem {
         }
 
         // Force chunk generation at spawn platform
-        end.getChunk(END_SPAWN_X >> 4, END_SPAWN_Z >> 4);
+        end.getChunk(ModConfig.getInstance().endTeleportSpawnX >> 4, ModConfig.getInstance().endTeleportSpawnZ >> 4);
 
         // Create obsidian platform for safe landing (like vanilla end portal behavior)
-        createSpawnPlatform(end, END_SPAWN_X, END_SPAWN_Y, END_SPAWN_Z);
+        createSpawnPlatform(end, ModConfig.getInstance().endTeleportSpawnX, ModConfig.getInstance().endTeleportSpawnY,
+                ModConfig.getInstance().endTeleportSpawnZ);
 
         // Teleport to End spawn platform
-        player.teleportTo(end, END_SPAWN_X + 0.5, END_SPAWN_Y + 1, END_SPAWN_Z + 0.5,
+        player.teleportTo(end, ModConfig.getInstance().endTeleportSpawnX + 0.5,
+                ModConfig.getInstance().endTeleportSpawnY + 1, ModConfig.getInstance().endTeleportSpawnZ + 0.5,
                 java.util.Set.of(), player.getYRot(), player.getXRot(), true);
 
         player.sendSystemMessage(Component.literal("§5§l✦ END! §rDu wurdest ins End teleportiert!"));

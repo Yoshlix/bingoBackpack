@@ -2,6 +2,7 @@ package de.yoshlix.bingobackpack.item.items;
 
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
+import de.yoshlix.bingobackpack.ModConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -17,7 +18,6 @@ import java.util.Random;
 public class NetherTeleport extends BingoItem {
 
     private final Random random = new Random();
-    private static final int NETHER_CEILING_Y = 127;
 
     @Override
     public String getId() {
@@ -82,8 +82,8 @@ public class NetherTeleport extends BingoItem {
         }
 
         if (safeY == -1) {
-            // Fallback to Y=64
-            safeY = 64;
+            // Fallback to configured nether fallback Y
+            safeY = ModConfig.getInstance().netherFallbackY;
         }
 
         // Teleport to Nether
@@ -98,7 +98,7 @@ public class NetherTeleport extends BingoItem {
 
     private int findSafeYNether(ServerLevel level, int x, int z) {
         int minY = level.getMinY();
-        int maxSafeY = NETHER_CEILING_Y - 2;
+        int maxSafeY = ModConfig.getInstance().netherCeilingY - 2;
 
         // Scan from bottom to top
         for (int y = minY + 1; y <= maxSafeY; y++) {

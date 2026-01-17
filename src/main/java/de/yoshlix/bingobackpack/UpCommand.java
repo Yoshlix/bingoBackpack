@@ -18,8 +18,6 @@ import net.minecraft.world.level.levelgen.Heightmap;
  */
 public class UpCommand {
 
-    private static final int NETHER_CEILING_Y = 127;
-
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("up")
                 .executes(UpCommand::execute));
@@ -112,7 +110,7 @@ public class UpCommand {
      */
     private static int findSurfaceYNether(ServerLevel level, int x, int z) {
         int minY = level.getMinY();
-        int maxSafeY = NETHER_CEILING_Y - 2;
+        int maxSafeY = ModConfig.getInstance().netherCeilingY - 2;
 
         // Start from player's current position and search upward for open sky (within
         // Nether)
