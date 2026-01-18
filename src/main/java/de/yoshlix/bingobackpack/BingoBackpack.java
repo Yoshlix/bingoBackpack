@@ -9,6 +9,7 @@ import de.yoshlix.bingobackpack.item.items.Flight1Min;
 import de.yoshlix.bingobackpack.item.items.Flight5Min;
 import de.yoshlix.bingobackpack.item.items.Flight15Min;
 import de.yoshlix.bingobackpack.item.items.MobPheromone;
+import de.yoshlix.bingobackpack.item.items.Paranoia;
 import de.yoshlix.bingobackpack.item.items.TeamShield;
 import de.yoshlix.bingobackpack.item.items.TimeoutPlayer;
 import net.fabricmc.api.ModInitializer;
@@ -84,6 +85,7 @@ public class BingoBackpack implements ModInitializer {
 
 			// Mob Pheromone spawning
 			MobPheromone.tickPheromoneEffects(server);
+			Paranoia.tickParanoiaEffects(server);
 		});
 	}
 }

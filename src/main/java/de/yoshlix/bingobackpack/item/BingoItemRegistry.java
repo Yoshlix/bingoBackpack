@@ -72,7 +72,6 @@ public class BingoItemRegistry {
         register(new TimeoutTeam());
 
         // Utility Items
-        register(new BingoRadar());
         register(new TeamShield());
         register(new StructureFinder());
         register(new TimeWatch());
@@ -90,6 +89,7 @@ public class BingoItemRegistry {
         register(new InstantFurnace());
         register(new MobPheromone());
         register(new TunnelDrill());
+        register(new Paranoia());
 
         // Legacy Example
 
