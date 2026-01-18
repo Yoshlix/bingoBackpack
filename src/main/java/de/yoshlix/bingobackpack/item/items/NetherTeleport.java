@@ -121,12 +121,14 @@ public class NetherTeleport extends BingoItem {
 
         // Ground must be solid and not lava
         boolean groundIsSafe = !groundState.isAir()
-                && !groundState.liquid()
-                && groundState.blocksMotion();
+                && groundState.getFluidState().isEmpty()
+                && !groundState.getCollisionShape(level, groundPos).isEmpty();
 
         // Feet and head must be passable and not lava
-        boolean feetIsPassable = !feetState.blocksMotion() && !feetState.liquid();
-        boolean headIsPassable = !headState.blocksMotion() && !headState.liquid();
+        boolean feetIsPassable = feetState.getCollisionShape(level, feetPos).isEmpty()
+                && feetState.getFluidState().isEmpty();
+        boolean headIsPassable = headState.getCollisionShape(level, headPos).isEmpty()
+                && headState.getFluidState().isEmpty();
 
         return groundIsSafe && feetIsPassable && headIsPassable;
     }

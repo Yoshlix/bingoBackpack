@@ -96,7 +96,7 @@ public class SwapLocationChoice extends BingoItem {
             Component message = Component.literal("  §e[" + index + "] ")
                     .append(Component.literal(enemy.getName().getString()).withStyle(Style.EMPTY
                             .withColor(ChatFormatting.RED)
-                            .withClickEvent(new ClickEvent.RunCommand("/bingobackpack swap " + index))
+                            .withClickEvent(new ClickEvent.RunCommand("/backpack perks swap " + index))
                             .withHoverEvent(new HoverEvent.ShowText(
                                     Component.literal("§7Biom: " + formatBiomeName(biome) +
                                             "\n§aKlicke zum Tauschen")))));
@@ -106,7 +106,7 @@ public class SwapLocationChoice extends BingoItem {
         }
 
         player.sendSystemMessage(Component.literal(""));
-        player.sendSystemMessage(Component.literal("§7Klicke oder schreibe §f/bingobackpack swap <nummer>"));
+        player.sendSystemMessage(Component.literal("§7Klicke oder schreibe §f/backpack perks swap <nummer>"));
         player.sendSystemMessage(Component.literal("§6§l══════════════════════════════"));
 
         return false;

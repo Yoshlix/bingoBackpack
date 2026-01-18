@@ -102,7 +102,7 @@ public class RerollChosenField extends BingoItem {
             Component message = Component.literal("  §e[" + index + "] ")
                     .append(Component.literal(name).withStyle(Style.EMPTY
                             .withColor(ChatFormatting.WHITE)
-                            .withClickEvent(new ClickEvent.RunCommand("/bingobackpack reroll " + index))
+                            .withClickEvent(new ClickEvent.RunCommand("/backpack perks reroll " + index))
                             .withHoverEvent(new HoverEvent.ShowText(
                                     Component.literal("Klicke um dieses Feld zu rerolln")))));
 
@@ -112,7 +112,7 @@ public class RerollChosenField extends BingoItem {
 
         player.sendSystemMessage(Component.literal(""));
         player.sendSystemMessage(
-                Component.literal("§7Klicke auf ein Feld oder schreibe §f/bingobackpack reroll <nummer>"));
+                Component.literal("§7Klicke auf ein Feld oder schreibe §f/backpack perks reroll <nummer>"));
         player.sendSystemMessage(Component.literal("§6§l════════════════════════════"));
 
         return false; // Don't consume until selection

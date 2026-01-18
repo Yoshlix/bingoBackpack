@@ -100,7 +100,7 @@ public class CompleteChosenBingoField extends BingoItem {
             Component message = Component.literal("  §e[" + index + "] ")
                     .append(Component.literal(name).withStyle(Style.EMPTY
                             .withColor(ChatFormatting.WHITE)
-                            .withClickEvent(new ClickEvent.RunCommand("/bingobackpack select " + objective.getId()))
+                            .withClickEvent(new ClickEvent.RunCommand("/backpack perks select " + objective.getId()))
                             .withHoverEvent(new HoverEvent.ShowText(
                                     Component.literal("Klicke um dieses Feld abzuschließen")))));
 
@@ -110,7 +110,7 @@ public class CompleteChosenBingoField extends BingoItem {
 
         player.sendSystemMessage(Component.literal(""));
         player.sendSystemMessage(
-                Component.literal("§7Klicke auf ein Feld oder schreibe §f/bingobackpack select <nummer>"));
+                Component.literal("§7Klicke auf ein Feld oder schreibe §f/backpack perks select <nummer>"));
         player.sendSystemMessage(Component.literal("§6§l════════════════════════════"));
 
         // Item is consumed when selection is made

@@ -155,7 +155,13 @@ public class BackpackCommand {
 
                         // /backpack items list - List all registered items
                         .then(Commands.literal("list")
-                                .executes(BackpackCommand::listItems))));
+                                .executes(BackpackCommand::listItems)))
+
+                // /backpack discord link <userId>
+                .then(Commands.literal("discord")
+                        .then(Commands.literal("link")
+                                .then(Commands.argument("userId", StringArgumentType.string())
+                                        .executes(BackpackCommand::linkDiscord)))));
 
     }
 
@@ -537,5 +543,20 @@ public class BackpackCommand {
 
         ctx.getSource().sendSuccess(() -> Component.literal(sb.toString()), false);
         return 1;
+    }
+
+    private static int linkDiscord(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        String discordId = StringArgumentType.getString(ctx, "userId");
+
+        if (DiscordManager.getInstance().linkPlayer(player.getUUID(), discordId)) {
+            ctx.getSource().sendSuccess(
+                    () -> Component.literal("§aLinked your Minecraft account to Discord ID: §e" + discordId), true);
+            return 1;
+        } else {
+            ctx.getSource().sendFailure(Component.literal(
+                    "§cInvalid Discord ID! It must be a numeric ID (enable Developer Mode in Discord to see it)."));
+            return 0;
+        }
     }
 }

@@ -176,12 +176,14 @@ public class RandomTeleport extends BingoItem {
 
         // Ground must be solid and not dangerous (not lava, not fire)
         boolean groundIsSafe = !groundState.isAir()
-                && !groundState.liquid()
-                && groundState.blocksMotion();
+                && groundState.getFluidState().isEmpty()
+                && !groundState.getCollisionShape(level, groundPos).isEmpty();
 
         // Feet and head must be passable (air or non-blocking) and not dangerous
-        boolean feetIsPassable = !feetState.blocksMotion() && !feetState.liquid();
-        boolean headIsPassable = !headState.blocksMotion() && !headState.liquid();
+        boolean feetIsPassable = feetState.getCollisionShape(level, feetPos).isEmpty()
+                && feetState.getFluidState().isEmpty();
+        boolean headIsPassable = headState.getCollisionShape(level, headPos).isEmpty()
+                && headState.getFluidState().isEmpty();
 
         return groundIsSafe && feetIsPassable && headIsPassable;
     }

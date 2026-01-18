@@ -99,7 +99,7 @@ public class TimeoutPlayer extends BingoItem {
             Component message = Component.literal("  §e[" + index + "] ")
                     .append(Component.literal(enemy.getName().getString()).withStyle(Style.EMPTY
                             .withColor(ChatFormatting.RED)
-                            .withClickEvent(new ClickEvent.RunCommand("/bingobackpack timeout " + index))
+                            .withClickEvent(new ClickEvent.RunCommand("/backpack perks timeout " + index))
                             .withHoverEvent(new HoverEvent.ShowText(
                                     Component.literal("§cKlicke um einzufrieren")))));
 
@@ -108,7 +108,7 @@ public class TimeoutPlayer extends BingoItem {
         }
 
         player.sendSystemMessage(Component.literal(""));
-        player.sendSystemMessage(Component.literal("§7Klicke oder schreibe §f/bingobackpack timeout <nummer>"));
+        player.sendSystemMessage(Component.literal("§7Klicke oder schreibe §f/backpack perks timeout <nummer>"));
         player.sendSystemMessage(Component.literal("§c§l══════════════════════════════"));
 
         return false;

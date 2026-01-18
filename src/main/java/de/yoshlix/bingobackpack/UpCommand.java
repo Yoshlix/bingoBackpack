@@ -84,9 +84,13 @@ public class UpCommand {
         var headState = level.getBlockState(headPos);
 
         // Check if the position is safe
-        boolean groundIsSafe = !groundState.isAir() && !groundState.liquid() && groundState.blocksMotion();
-        boolean feetIsSafe = !feetState.blocksMotion() && !feetState.liquid();
-        boolean headIsSafe = !headState.blocksMotion() && !headState.liquid();
+        // Check if the position is safe
+        boolean groundIsSafe = !groundState.isAir() && groundState.getFluidState().isEmpty()
+                && !groundState.getCollisionShape(level, groundPos).isEmpty();
+        boolean feetIsSafe = feetState.getCollisionShape(level, feetPos).isEmpty()
+                && feetState.getFluidState().isEmpty();
+        boolean headIsSafe = headState.getCollisionShape(level, headPos).isEmpty()
+                && headState.getFluidState().isEmpty();
 
         if (groundIsSafe && feetIsSafe && headIsSafe) {
             return heightmapY;
@@ -122,7 +126,7 @@ public class UpCommand {
             BlockPos pos = new BlockPos(x, y, z);
             var state = level.getBlockState(pos);
 
-            if (!state.isAir() && !state.liquid() && state.blocksMotion()) {
+            if (!state.isAir() && state.getFluidState().isEmpty() && !state.getCollisionShape(level, pos).isEmpty()) {
                 // Found solid ground, check if we can stand on it
                 if (isSafePosition(level, x, y + 1, z)) {
                     highestGround = y + 1;
@@ -160,12 +164,14 @@ public class UpCommand {
 
         // Ground must be solid and not dangerous
         boolean groundIsSafe = !groundState.isAir()
-                && !groundState.liquid()
-                && groundState.blocksMotion();
+                && groundState.getFluidState().isEmpty()
+                && !groundState.getCollisionShape(level, groundPos).isEmpty();
 
         // Feet and head must be passable and not dangerous
-        boolean feetIsPassable = !feetState.blocksMotion() && !feetState.liquid();
-        boolean headIsPassable = !headState.blocksMotion() && !headState.liquid();
+        boolean feetIsPassable = feetState.getCollisionShape(level, feetPos).isEmpty()
+                && feetState.getFluidState().isEmpty();
+        boolean headIsPassable = headState.getCollisionShape(level, headPos).isEmpty()
+                && headState.getFluidState().isEmpty();
 
         return groundIsSafe && feetIsPassable && headIsPassable;
     }

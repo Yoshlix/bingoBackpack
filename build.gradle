@@ -50,6 +50,8 @@ dependencies {
 	compileOnly files('bingo/api/build/libs/bingo-api-2.9.7-custom.jar')
 	compileOnly files('bingo/common/build/libs/bingo-common-2.9.7-custom.jar')
 	compileOnly files('bingo/platform/build/libs/bingo-platform-2.9.7-custom.jar')
+
+	implementation "com.discord4j:discord4j-core:3.3.0"
 	
 	// Runtime: The Bingo mod JAR must be manually placed in run/mods/ folder
 	// Use: cp bingo/mc1.21.11/build/libs/bingo-*+mc1.21.11.jar run/mods/

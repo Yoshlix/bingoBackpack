@@ -89,7 +89,7 @@ public class BiomeTeleportChoice extends BingoItem {
             Component message = Component.literal("  §e[" + index + "] ")
                     .append(Component.literal(displayName).withStyle(Style.EMPTY
                             .withColor(ChatFormatting.GREEN)
-                            .withClickEvent(new ClickEvent.RunCommand("/bingobackpack biome " + index))
+                            .withClickEvent(new ClickEvent.RunCommand("/backpack perks biome " + index))
                             .withHoverEvent(new HoverEvent.ShowText(
                                     Component.literal("Klicke um zu " + displayName + " zu teleportieren")))));
 
@@ -104,7 +104,7 @@ public class BiomeTeleportChoice extends BingoItem {
         }
 
         player.sendSystemMessage(Component.literal(""));
-        player.sendSystemMessage(Component.literal("§7Klicke oder schreibe §f/bingobackpack biome <nummer>"));
+        player.sendSystemMessage(Component.literal("§7Klicke oder schreibe §f/backpack perks biome <nummer>"));
         player.sendSystemMessage(Component.literal("§6§l════════════════════════════"));
 
         return false; // Don't consume until selection

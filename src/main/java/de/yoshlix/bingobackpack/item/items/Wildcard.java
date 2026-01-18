@@ -65,7 +65,7 @@ public class Wildcard extends BingoItem {
                     .append(Component.literal(item.getName()).withStyle(Style.EMPTY
                             .withColor(ChatFormatting.BLUE)
                             .withBold(true)
-                            .withClickEvent(new ClickEvent.RunCommand("/bingobackpack wildcard " + item.getId()))
+                            .withClickEvent(new ClickEvent.RunCommand("/backpack perks wildcard " + item.getId()))
                             .withHoverEvent(new HoverEvent.ShowText(
                                     Component.literal("§9§l" + item.getName() + "\n§7" + item.getDescription()
                                             + "\n\n§eKlicke zum Auswählen!")))));

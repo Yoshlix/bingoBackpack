@@ -97,7 +97,7 @@ public class Lockdown extends BingoItem {
                     .append(Component.literal(enemy.getName().getString()).withStyle(Style.EMPTY
                             .withColor(ChatFormatting.RED)
                             .withBold(true)
-                            .withClickEvent(new ClickEvent.RunCommand("/bingobackpack lockdown " + index))
+                            .withClickEvent(new ClickEvent.RunCommand("/backpack perks lockdown " + index))
                             .withHoverEvent(new HoverEvent.ShowText(
                                     Component.literal("§c§lKlicke um " + enemy.getName().getString()
                                             + " zu sperren!\n§7Backpack gesperrt für 2 Minuten")))));

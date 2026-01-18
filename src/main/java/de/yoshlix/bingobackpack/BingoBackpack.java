@@ -55,12 +55,14 @@ public class BingoBackpack implements ModInitializer {
 			BingoIntegration.getInstance().init(server);
 			SpawnManager.getInstance().init(server);
 			BingoRewardSystem.getInstance().init(server);
+			DiscordManager.getInstance().init(server);
 			LOGGER.info("BingoBackpack initialized!");
 		});
 
 		// Save data when server stops
 		ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
 			BackpackManager.getInstance().saveAll();
+			DiscordManager.getInstance().stop();
 			LOGGER.info("BingoBackpack data saved!");
 		});
 

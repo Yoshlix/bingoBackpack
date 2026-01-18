@@ -106,7 +106,7 @@ public class ResetFieldProgress extends BingoItem {
             Component message = Component.literal("  §e[" + index + "] §c" + completion.teamId + "§7: ")
                     .append(Component.literal(name).withStyle(Style.EMPTY
                             .withColor(ChatFormatting.WHITE)
-                            .withClickEvent(new ClickEvent.RunCommand("/bingobackpack reset " + index))
+                            .withClickEvent(new ClickEvent.RunCommand("/backpack perks reset " + index))
                             .withHoverEvent(new HoverEvent.ShowText(
                                     Component.literal("Klicke um diesen Fortschritt zurückzusetzen")))));
 
@@ -115,7 +115,7 @@ public class ResetFieldProgress extends BingoItem {
         }
 
         player.sendSystemMessage(Component.literal(""));
-        player.sendSystemMessage(Component.literal("§7Klicke oder schreibe §f/bingobackpack reset <nummer>"));
+        player.sendSystemMessage(Component.literal("§7Klicke oder schreibe §f/backpack perks reset <nummer>"));
         player.sendSystemMessage(Component.literal("§c§l════════════════════════════════"));
 
         return false;

@@ -12,51 +12,52 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Command handler for Bingo Item selection menus.
- * Handles commands like /bingobackpack select, /bingobackpack reroll, etc.
+ * Handles commands like /backpack perks select, /backpack perks reroll, etc.
  */
 public class BingoItemCommands {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        dispatcher.register(Commands.literal("bingobackpack")
-                // /bingobackpack select <id/number> - For CompleteChosenBingoField
-                .then(Commands.literal("select")
-                        .then(Commands.argument("selection", StringArgumentType.greedyString())
-                                .executes(BingoItemCommands::handleSelect)))
+        dispatcher.register(Commands.literal("backpack")
+                .then(Commands.literal("perks")
+                        // /backpack perks select <id/number>
+                        .then(Commands.literal("select")
+                                .then(Commands.argument("selection", StringArgumentType.greedyString())
+                                        .executes(BingoItemCommands::handleSelect)))
 
-                // /bingobackpack reroll <number> - For RerollChosenField
-                .then(Commands.literal("reroll")
-                        .then(Commands.argument("selection", StringArgumentType.string())
-                                .executes(BingoItemCommands::handleReroll)))
+                        // /backpack perks reroll <number>
+                        .then(Commands.literal("reroll")
+                                .then(Commands.argument("selection", StringArgumentType.string())
+                                        .executes(BingoItemCommands::handleReroll)))
 
-                // /bingobackpack reset <number> - For ResetFieldProgress
-                .then(Commands.literal("reset")
-                        .then(Commands.argument("selection", StringArgumentType.string())
-                                .executes(BingoItemCommands::handleReset)))
+                        // /backpack perks reset <number>
+                        .then(Commands.literal("reset")
+                                .then(Commands.argument("selection", StringArgumentType.string())
+                                        .executes(BingoItemCommands::handleReset)))
 
-                // /bingobackpack biome <number> - For BiomeTeleportChoice
-                .then(Commands.literal("biome")
-                        .then(Commands.argument("selection", StringArgumentType.string())
-                                .executes(BingoItemCommands::handleBiome)))
+                        // /backpack perks biome <number>
+                        .then(Commands.literal("biome")
+                                .then(Commands.argument("selection", StringArgumentType.string())
+                                        .executes(BingoItemCommands::handleBiome)))
 
-                // /bingobackpack swap <number> - For SwapLocationChoice
-                .then(Commands.literal("swap")
-                        .then(Commands.argument("selection", StringArgumentType.string())
-                                .executes(BingoItemCommands::handleSwap)))
+                        // /backpack perks swap <number>
+                        .then(Commands.literal("swap")
+                                .then(Commands.argument("selection", StringArgumentType.string())
+                                        .executes(BingoItemCommands::handleSwap)))
 
-                // /bingobackpack timeout <number> - For TimeoutPlayer
-                .then(Commands.literal("timeout")
-                        .then(Commands.argument("selection", StringArgumentType.string())
-                                .executes(BingoItemCommands::handleTimeout)))
+                        // /backpack perks timeout <number>
+                        .then(Commands.literal("timeout")
+                                .then(Commands.argument("selection", StringArgumentType.string())
+                                        .executes(BingoItemCommands::handleTimeout)))
 
-                // /bingobackpack lockdown <number> - For Lockdown
-                .then(Commands.literal("lockdown")
-                        .then(Commands.argument("selection", StringArgumentType.string())
-                                .executes(BingoItemCommands::handleLockdown)))
+                        // /backpack perks lockdown <number>
+                        .then(Commands.literal("lockdown")
+                                .then(Commands.argument("selection", StringArgumentType.string())
+                                        .executes(BingoItemCommands::handleLockdown)))
 
-                // /bingobackpack wildcard <item_id> - For Wildcard
-                .then(Commands.literal("wildcard")
-                        .then(Commands.argument("selection", StringArgumentType.greedyString())
-                                .executes(BingoItemCommands::handleWildcard))));
+                        // /backpack perks wildcard <item_id>
+                        .then(Commands.literal("wildcard")
+                                .then(Commands.argument("selection", StringArgumentType.greedyString())
+                                        .executes(BingoItemCommands::handleWildcard)))));
     }
 
     private static int handleSelect(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
