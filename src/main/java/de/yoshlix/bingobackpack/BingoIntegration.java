@@ -76,6 +76,8 @@ public class BingoIntegration {
                     ServerPlayer player = server.getPlayerList().getPlayerByName(name);
                     if (player != null) {
                         giveBackpackToPlayer(player, scoPlayerTeam.getName());
+                        // Give starter kit to player at round start
+                        StarterKitManager.getInstance().giveStarterKit(player);
                     }
                 }
             }
