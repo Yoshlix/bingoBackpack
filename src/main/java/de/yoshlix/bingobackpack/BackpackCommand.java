@@ -549,7 +549,7 @@ public class BackpackCommand {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
         String discordId = StringArgumentType.getString(ctx, "userId");
 
-        if (DiscordManager.getInstance().linkPlayer(player.getUUID(), discordId)) {
+        if (DiscordService.getInstance().linkPlayer(player.getUUID(), discordId)) {
             ctx.getSource().sendSuccess(
                     () -> Component.literal("§aLinked your Minecraft account to Discord ID: §e" + discordId), true);
             return 1;

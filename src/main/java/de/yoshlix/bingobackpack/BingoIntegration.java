@@ -90,13 +90,13 @@ public class BingoIntegration {
 
             backpackGiven = true;
             // Discord Round Start
-            DiscordManager.getInstance().onRoundStart();
+            DiscordService.getInstance().onRoundStart();
         }
 
         if (BingoApi.getGame().getStatus().equals(BingoGameStatus.POSTGAME)) {
             backpackGiven = false;
             // Discord Round End
-            DiscordManager.getInstance().onRoundEnd();
+            DiscordService.getInstance().onRoundEnd();
         }
     }
 

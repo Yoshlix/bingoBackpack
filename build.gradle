@@ -1,7 +1,6 @@
 plugins {
 	id 'fabric-loom' version "${loom_version}"
 	id 'maven-publish'
-	id 'com.gradleup.shadow' version '8.3.5'
 }
 
 version = project.mod_version
@@ -35,10 +34,6 @@ loom {
 
 }
 
-configurations {
-	shadow
-	implementation.extendsFrom shadow
-}
 
 dependencies {
 	// To change the versions see the gradle.properties file
@@ -57,7 +52,6 @@ dependencies {
 	compileOnly files('bingo/common/build/libs/bingo-common-2.9.7-custom.jar')
 	compileOnly files('bingo/platform/build/libs/bingo-platform-2.9.7-custom.jar')
 
-	shadow "com.discord4j:discord4j-core:3.3.0"
 	
 	// Runtime: The Bingo mod JAR must be manually placed in run/mods/ folder
 	// Use: cp bingo/mc1.21.11/build/libs/bingo-*+mc1.21.11.jar run/mods/
@@ -86,34 +80,7 @@ java {
 	targetCompatibility = JavaVersion.VERSION_21
 }
 
-shadowJar {
-	configurations = [project.configurations.shadow]
-	archiveClassifier = 'dev-shadow'
-	exclude 'META-INF/*.SF'
-	exclude 'META-INF/*.DSA'
-	exclude 'META-INF/*.RSA'
-	// Exclude only the Netty modules that Minecraft provides
-	// Keep resolver-dns, handler-proxy, etc. that Discord4J needs
-	exclude 'io/netty/buffer/**'
-	exclude 'io/netty/channel/**'
-	exclude 'io/netty/handler/codec/**'
-	exclude 'io/netty/handler/ssl/**'
-	exclude 'io/netty/handler/stream/**'
-	exclude 'io/netty/handler/timeout/**'
-	exclude 'io/netty/handler/address/**'
-	exclude 'io/netty/handler/flush/**'
-	exclude 'io/netty/handler/flow/**'
-	exclude 'io/netty/handler/ipfilter/**'
-	exclude 'io/netty/handler/logging/**'
-	exclude 'io/netty/handler/traffic/**'
-	exclude 'io/netty/util/**'
-	exclude 'io/netty/internal/**'
-}
 
-remapJar {
-	inputFile.set(shadowJar.archiveFile)
-	dependsOn shadowJar
-}
 
 jar {
 	inputs.property "archivesName", project.base.archivesName
