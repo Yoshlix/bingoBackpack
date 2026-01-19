@@ -33,18 +33,14 @@ dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	mappings loom.officialMojangMappings()
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
-	// Kotlin stdlib (Bingo API requirement)
 	implementation "org.jetbrains.kotlin:kotlin-stdlib:2.2.21"
 
-	// Bingo API (compile only – provided by external mod)
 	compileOnly files('bingo/api/build/libs/bingo-api-2.9.7-custom.jar')
 	compileOnly files('bingo/common/build/libs/bingo-common-2.9.7-custom.jar')
 	compileOnly files('bingo/platform/build/libs/bingo-platform-2.9.7-custom.jar')
 
-	// Discord4J (SHADOWED)
 	implementation "com.discord4j:discord4j-core:3.3.0"
 }
 
@@ -71,18 +67,25 @@ jar {
 	}
 }
 
-/* =======================
-   SHADOW + FABRIC REMAP
-   ======================= */
+/* =========================
+   SHADOW (GRADLE 9 FIX)
+   ========================= */
 
 shadowJar {
 	configurations = [project.configurations.runtimeClasspath]
 	archiveClassifier.set("dev-shadow")
 
-	// REQUIRED relocations (avoid classpath conflicts)
+	// 🔴 WICHTIG: verhindert META-INF / mode Crash
+	isPreserveFileTimestamps = false
+	isReproducibleFileOrder = true
+
+	// sichere Relocations
 	relocate "discord4j", "de.yoshlix.bingobackpack.shadow.discord4j"
 	relocate "reactor", "de.yoshlix.bingobackpack.shadow.reactor"
 	relocate "io.netty", "de.yoshlix.bingobackpack.shadow.netty"
+
+	// META-INF sauber zusammenführen
+	mergeServiceFiles()
 }
 
 remapJar {
@@ -90,10 +93,6 @@ remapJar {
 	inputFile.set(shadowJar.archiveFile)
 	archiveClassifier.set("")
 }
-
-/* =======================
-   PUBLISHING
-   ======================= */
 
 publishing {
 	publications {
