@@ -1,6 +1,7 @@
 plugins {
 	id 'fabric-loom' version "${loom_version}"
 	id 'maven-publish'
+	id "com.github.johnrengelman.shadow" version "8.1.1"
 }
 
 version = project.mod_version
@@ -11,11 +12,6 @@ base {
 }
 
 repositories {
-	// Add repositories to retrieve artifacts from in here.
-	// You should only use this when depending on other mods because
-	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
-	// for more information about repositories.
 	maven {
 		name = "Yet Another Bingo"
 		url = "https://gitlab.com/api/v4/projects/48318565/packages/maven"
@@ -31,77 +27,79 @@ loom {
 			sourceSet sourceSets.main
 		}
 	}
-
 }
 
 dependencies {
-	// To change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	mappings loom.officialMojangMappings()
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-	
-	// Kotlin stdlib for Bingo API
+
+	// Kotlin stdlib (Bingo API requirement)
 	implementation "org.jetbrains.kotlin:kotlin-stdlib:2.2.21"
-	
-	// Local Bingo API (custom version - compile against the modules)
+
+	// Bingo API (compile only – provided by external mod)
 	compileOnly files('bingo/api/build/libs/bingo-api-2.9.7-custom.jar')
 	compileOnly files('bingo/common/build/libs/bingo-common-2.9.7-custom.jar')
 	compileOnly files('bingo/platform/build/libs/bingo-platform-2.9.7-custom.jar')
 
+	// Discord4J (SHADOWED)
 	implementation "com.discord4j:discord4j-core:3.3.0"
-	
-	// Runtime: The Bingo mod JAR must be manually placed in run/mods/ folder
-	// Use: cp bingo/mc1.21.11/build/libs/bingo-*+mc1.21.11.jar run/mods/
-	// The fat JAR (-all.jar) is missing fabric-language-kotlin, so use the normal JAR
 }
 
 processResources {
 	inputs.property "version", project.version
-
 	filesMatching("fabric.mod.json") {
 		expand "version": inputs.properties.version
 	}
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 21
+	options.release = 21
 }
 
 java {
-	// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-	// if it is present.
-	// If you remove this line, sources will not be generated.
 	withSourcesJar()
-
 	sourceCompatibility = JavaVersion.VERSION_21
 	targetCompatibility = JavaVersion.VERSION_21
 }
 
 jar {
-	inputs.property "archivesName", project.base.archivesName
-
 	from("LICENSE") {
-		rename { "${it}_${inputs.properties.archivesName}"}
+		rename { "${it}_${project.base.archivesName.get()}" }
 	}
 }
 
-// configure the maven publication
+/* =======================
+   SHADOW + FABRIC REMAP
+   ======================= */
+
+shadowJar {
+	configurations = [project.configurations.runtimeClasspath]
+	archiveClassifier.set("dev-shadow")
+
+	// REQUIRED relocations (avoid classpath conflicts)
+	relocate "discord4j", "de.yoshlix.bingobackpack.shadow.discord4j"
+	relocate "reactor", "de.yoshlix.bingobackpack.shadow.reactor"
+	relocate "io.netty", "de.yoshlix.bingobackpack.shadow.netty"
+}
+
+remapJar {
+	dependsOn shadowJar
+	inputFile.set(shadowJar.archiveFile)
+	archiveClassifier.set("")
+}
+
+/* =======================
+   PUBLISHING
+   ======================= */
+
 publishing {
 	publications {
 		create("mavenJava", MavenPublication) {
 			artifactId = project.archives_base_name
 			from components.java
 		}
-	}
-
-	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-	repositories {
-		// Add repositories to publish to here.
-		// Notice: This block does NOT have the same function as the block in the top level.
-		// The repositories here will be used for publishing your artifact, not for
-		// retrieving dependencies.
 	}
 }
