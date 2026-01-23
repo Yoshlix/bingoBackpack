@@ -31,12 +31,11 @@ public class DiscordService {
     public void init(MinecraftServer server) {
         ModConfig config = ModConfig.getInstance();
         if (config.discordEnabled && !config.discordToken.isEmpty()) {
-            ConfigPayload payload = new ConfigPayload();
-            payload.discordToken = config.discordToken;
-            payload.discordGuildId = config.discordGuildId;
-            payload.discordLobbyChannelName = config.discordLobbyChannelName;
-            payload.discordTeamChannelFormat = config.discordTeamChannelFormat;
-
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("discordToken", config.discordToken);
+            payload.put("discordGuildId", config.discordGuildId);
+            payload.put("discordLobbyChannelName", config.discordLobbyChannelName);
+            payload.put("discordTeamChannelFormat", config.discordTeamChannelFormat);
             sendAsync("/init", payload);
         }
     }
@@ -46,16 +45,11 @@ public class DiscordService {
     }
 
     public boolean linkPlayer(UUID playerUuid, String discordId) {
-        LinkPayload payload = new LinkPayload();
-        payload.uuid = playerUuid;
-        payload.discordId = discordId;
-
-        // Synchronous for command feedback? Or just fire and forget?
-        // The original returned boolean if format was valid.
-        // We can do simple check here.
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("uuid", playerUuid);
+        payload.put("discordId", discordId);
         if (!discordId.matches("\\d+"))
             return false;
-
         sendAsync("/link", payload);
         return true;
     }
@@ -63,15 +57,12 @@ public class DiscordService {
     public void onRoundStart() {
         Map<String, List<UUID>> teams = new HashMap<>();
         Set<String> teamNames = TeamManager.getInstance().getAllTeams();
-
         for (String teamName : teamNames) {
             Set<UUID> members = TeamManager.getInstance().getTeamMembers(teamName);
             teams.put(teamName, new ArrayList<>(members));
         }
-
-        StartRoundPayload payload = new StartRoundPayload();
-        payload.teams = teams;
-
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("teams", teams);
         sendAsync("/round/start", payload);
     }
 
@@ -81,41 +72,57 @@ public class DiscordService {
 
     private void sendAsync(String endpoint, Object payload) {
         CompletableFuture.runAsync(() -> {
-            try {
-                String json = payload != null ? GSON.toJson(payload) : "";
-                HttpRequest.Builder builder = HttpRequest.newBuilder()
-                        .uri(URI.create(API_URL + endpoint))
-                        .header("Content-Type", "application/json");
+            int maxRetries = 3;
+            int attempt = 0;
+            long backoff = 1000L; // 1 Sekunde
+            boolean success = false;
+            Exception lastException = null;
+            while (attempt < maxRetries && !success) {
+                attempt++;
+                try {
+                    String json = payload != null ? GSON.toJson(payload) : "";
+                    HttpRequest.Builder builder = HttpRequest.newBuilder()
+                            .uri(URI.create(API_URL + endpoint))
+                            .header("Content-Type", "application/json")
+                            .timeout(java.time.Duration.ofSeconds(5));
 
-                if (payload != null) {
-                    builder.POST(HttpRequest.BodyPublishers.ofString(json));
-                } else {
-                    builder.POST(HttpRequest.BodyPublishers.noBody());
-                }
+                    if (payload != null) {
+                        builder.POST(HttpRequest.BodyPublishers.ofString(json));
+                    } else {
+                        builder.POST(HttpRequest.BodyPublishers.noBody());
+                    }
 
-                HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
-                if (response.statusCode() >= 400) {
-                    BingoBackpack.LOGGER.error("Discord Service Error {}: {}", response.statusCode(), response.body());
+                    HttpResponse<String> response = httpClient.send(builder.build(),
+                            HttpResponse.BodyHandlers.ofString());
+                    if (response.statusCode() >= 400) {
+                        BingoBackpack.LOGGER.error("Discord Service Error {}: {} (Attempt {}/{})",
+                                response.statusCode(), response.body(), attempt, maxRetries);
+                        lastException = new RuntimeException("HTTP Status: " + response.statusCode());
+                        Thread.sleep(backoff * attempt); // Exponentielles Backoff
+                    } else {
+                        if (attempt > 1) {
+                            BingoBackpack.LOGGER.info("Discord Service call {} erfolgreich nach {} Versuchen.",
+                                    endpoint, attempt);
+                        }
+                        success = true;
+                    }
+                } catch (Exception e) {
+                    lastException = e;
+                    BingoBackpack.LOGGER.error("Fehler bei Discord Service Call ({}), Versuch {}/{}", endpoint, attempt,
+                            maxRetries, e);
+                    try {
+                        Thread.sleep(backoff * attempt);
+                    } catch (InterruptedException ignored) {
+                    }
                 }
-            } catch (Exception e) {
-                BingoBackpack.LOGGER.error("Failed to communicate with Discord Service", e);
+            }
+            if (!success) {
+                BingoBackpack.LOGGER.error(
+                        "Discord Service Call {} fehlgeschlagen nach {} Versuchen! Letzter Fehler: {}", endpoint,
+                        maxRetries, lastException != null ? lastException.getMessage() : "unbekannt");
             }
         });
     }
 
-    private static class ConfigPayload {
-        String discordToken;
-        String discordGuildId;
-        String discordLobbyChannelName;
-        String discordTeamChannelFormat;
-    }
-
-    private static class LinkPayload {
-        UUID uuid;
-        String discordId;
-    }
-
-    private static class StartRoundPayload {
-        Map<String, List<UUID>> teams;
-    }
+    // Payload-Klassen entfernt, da sie nicht benötigt werden
 }
