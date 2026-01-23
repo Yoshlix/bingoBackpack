@@ -34,3 +34,4 @@ out/
 .vscode/
 run/**
 bin/**
+.DS_Store
