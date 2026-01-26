@@ -125,8 +125,13 @@ public class Paranoia extends BingoItem {
     }
 
     private static void playRandomCreepySound(ServerPlayer player, Random random) {
-        // List of creepy sounds
-        var sounds = List.of(
+        if (player == null || player.connection == null) {
+            return;
+        }
+
+        // List of creepy sounds - using only safe, valid sound events
+        // Removed potentially problematic sounds and ensured all are valid SoundEvent instances
+        List<net.minecraft.sounds.SoundEvent> sounds = List.of(
                 SoundEvents.CREEPER_PRIMED,
                 SoundEvents.TNT_PRIMED,
                 SoundEvents.ENDERMAN_SCREAM,
@@ -135,11 +140,25 @@ public class Paranoia extends BingoItem {
                 SoundEvents.ZOMBIE_BREAK_WOODEN_DOOR,
                 SoundEvents.WITCH_CELEBRATE,
                 SoundEvents.GHAST_SCREAM,
-                SoundEvents.WITHER_SPAWN, // Maybe too loud?
-                SoundEvents.GENERIC_EXPLODE // Just to scare them
+                SoundEvents.WITHER_SPAWN,
+                SoundEvents.GENERIC_EXPLODE,
+                SoundEvents.AMETHYST_BLOCK_CHIME,
+                SoundEvents.AMETHYST_BLOCK_RESONATE,
+                SoundEvents.SCULK_SHRIEKER_SHRIEK,
+                SoundEvents.ELDER_GUARDIAN_CURSE
         );
 
-        var sound = sounds.get(random.nextInt(sounds.size()));
+        if (sounds.isEmpty()) {
+            return;
+        }
+
+        net.minecraft.sounds.SoundEvent soundEvent = sounds.get(random.nextInt(sounds.size()));
+        
+        // Validate sound event is not null
+        if (soundEvent == null) {
+            return;
+        }
+
         float volume = 0.5f + random.nextFloat() * 0.5f;
         float pitch = 0.8f + random.nextFloat() * 0.4f;
 
@@ -149,32 +168,20 @@ public class Paranoia extends BingoItem {
         double dy = (random.nextDouble() - 0.5) * 2.0;
         double dz = (random.nextDouble() - 0.5) * 6.0;
 
-        // Using standard level.playSound would play for everyone near
-        // To play ONLY for target, we need a packet or careful usage
-        // Actually ServerPlayer.playNotifySound or connection.send(Packet)
-
-        // This plays to the player at given location.
-        // If we want ONLY the player to hear it, typically connection.send is best,
-        // but simple level.playSound with the player as the "source" player argument
-        // usually plays to everyone EXCEPT the source if not carefully done,
-        // wait, let's use the player's connection directly.
-
-        // Fix: Explicitly cast sound object to SoundEvent (List.of infers common
-        // supertype if mixed, but here all are SoundEvents)
-        // Or ensure the list is typed correctly.
-        // The error "Object cannot be converted to SoundEvent" suggests `var sound` is
-        // inferred as Object.
-        net.minecraft.sounds.SoundEvent soundEvent = (net.minecraft.sounds.SoundEvent) sound;
-
-        player.connection.send(new ClientboundSoundPacket(
-                net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT.wrapAsHolder(soundEvent),
-                SoundSource.MASTER,
-                player.getX() + dx,
-                player.getY() + dy,
-                player.getZ() + dz,
-                volume,
-                pitch,
-                random.nextLong()));
+        try {
+            player.connection.send(new ClientboundSoundPacket(
+                    net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT.wrapAsHolder(soundEvent),
+                    SoundSource.MASTER,
+                    player.getX() + dx,
+                    player.getY() + dy,
+                    player.getZ() + dz,
+                    volume,
+                    pitch,
+                    random.nextLong()));
+        } catch (Exception e) {
+            // Silently fail if sound cannot be played (e.g., player disconnected)
+            // Log only in debug mode to avoid spam
+        }
     }
 
     private boolean isActive(UUID playerId) {

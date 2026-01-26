@@ -1,5 +1,6 @@
 package de.yoshlix.bingobackpack.item.items;
 
+import de.yoshlix.bingobackpack.BingoBackpack;
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
 import net.minecraft.core.BlockPos;
@@ -126,8 +127,9 @@ public class MobPheromone extends BingoItem {
     }
 
     private static void spawnMobsAroundPlayer(ServerPlayer player) {
-        if (!(player.level() instanceof ServerLevel level))
+        if (player == null || !(player.level() instanceof ServerLevel level)) {
             return;
+        }
 
         Random random = new Random();
 
@@ -135,30 +137,52 @@ public class MobPheromone extends BingoItem {
         int mobCount = 1 + random.nextInt(3);
 
         for (int i = 0; i < mobCount; i++) {
-            // Random position in radius
-            int dx = random.nextInt(SPAWN_RADIUS * 2) - SPAWN_RADIUS;
-            int dz = random.nextInt(SPAWN_RADIUS * 2) - SPAWN_RADIUS;
+            try {
+                // Random position in radius
+                int dx = random.nextInt(SPAWN_RADIUS * 2) - SPAWN_RADIUS;
+                int dz = random.nextInt(SPAWN_RADIUS * 2) - SPAWN_RADIUS;
 
-            // Must be at least 8 blocks away
-            if (Math.abs(dx) < 8 && Math.abs(dz) < 8) {
-                dx = dx < 0 ? -8 : 8;
-            }
+                // Must be at least 8 blocks away
+                if (Math.abs(dx) < 8 && Math.abs(dz) < 8) {
+                    dx = dx < 0 ? -8 : 8;
+                }
 
-            BlockPos spawnPos = player.blockPosition().offset(dx, 0, dz);
+                BlockPos spawnPos = player.blockPosition().offset(dx, 0, dz);
 
-            // Find suitable Y level
-            spawnPos = findSpawnablePosition(level, spawnPos);
-            if (spawnPos == null)
-                continue;
+                // Find suitable Y level
+                spawnPos = findSpawnablePosition(level, spawnPos);
+                if (spawnPos == null) {
+                    continue;
+                }
 
-            // Choose mob type based on dimension and randomness
-            EntityType<? extends Monster> mobType = chooseMobType(level, random);
+                // Choose mob type based on dimension and randomness
+                EntityType<? extends Monster> mobType = chooseMobType(level, random);
+                if (mobType == null) {
+                    continue;
+                }
 
-            // Spawn the mob
-            var mob = mobType.spawn(level, spawnPos, EntitySpawnReason.EVENT);
-            if (mob != null) {
-                // Make mob immediately aware of player
-                mob.setTarget(player);
+                // Validate spawn position is loaded
+                if (!level.isLoaded(spawnPos)) {
+                    continue;
+                }
+
+                // Spawn the mob with error handling
+                try {
+                    var mob = mobType.spawn(level, spawnPos, EntitySpawnReason.EVENT);
+                    if (mob != null && mob.isAlive()) {
+                        // Make mob immediately aware of player
+                        if (mob instanceof net.minecraft.world.entity.monster.Monster monster) {
+                            monster.setTarget(player);
+                        }
+                    }
+                } catch (Exception e) {
+                    // Log spawn failures but don't crash - some mobs may fail to spawn
+                    // due to dimension restrictions or spawn conditions
+                    BingoBackpack.LOGGER.debug("Failed to spawn mob {} at {}: {}", mobType, spawnPos, e.getMessage());
+                }
+            } catch (Exception e) {
+                // Catch any unexpected errors during spawn attempt
+                BingoBackpack.LOGGER.warn("Error during mob spawn attempt for player {}: {}", player.getName().getString(), e.getMessage());
             }
         }
     }
@@ -179,19 +203,23 @@ public class MobPheromone extends BingoItem {
     @SuppressWarnings("unchecked")
     private static EntityType<? extends Monster> chooseMobType(ServerLevel level, Random random) {
         // Dimension-specific mob pools
+        // Removed problematic mobs:
+        // - GHAST: Requires large spawn space and special conditions, can crash if spawned incorrectly
+        // - SHULKER: Only spawns naturally in End Cities, can cause issues if spawned elsewhere
         if (level.dimension() == Level.NETHER) {
             EntityType<?>[] netherMobs = {
                     EntityType.ZOMBIFIED_PIGLIN,
                     EntityType.BLAZE,
                     EntityType.WITHER_SKELETON,
                     EntityType.MAGMA_CUBE,
-                    EntityType.GHAST
+                    EntityType.PIGLIN,
+                    EntityType.HOGLIN
             };
             return (EntityType<? extends Monster>) netherMobs[random.nextInt(netherMobs.length)];
         } else if (level.dimension() == Level.END) {
+            // Only Enderman in End - Shulker requires End City structure
             EntityType<?>[] endMobs = {
-                    EntityType.ENDERMAN,
-                    EntityType.SHULKER
+                    EntityType.ENDERMAN
             };
             return (EntityType<? extends Monster>) endMobs[random.nextInt(endMobs.length)];
         } else {
@@ -204,7 +232,9 @@ public class MobPheromone extends BingoItem {
                     EntityType.ENDERMAN,
                     EntityType.WITCH,
                     EntityType.CAVE_SPIDER,
-                    EntityType.SLIME
+                    EntityType.SLIME,
+                    EntityType.DROWNED,
+                    EntityType.HUSK
             };
             return (EntityType<? extends Monster>) overworldMobs[random.nextInt(overworldMobs.length)];
         }

@@ -45,25 +45,44 @@ public class DiscordService {
     }
 
     public boolean linkPlayer(UUID playerUuid, String discordId) {
+        if (playerUuid == null || discordId == null || discordId.isEmpty()) {
+            return false;
+        }
+        if (!discordId.matches("\\d+")) {
+            return false;
+        }
         Map<String, Object> payload = new HashMap<>();
         payload.put("uuid", playerUuid);
         payload.put("discordId", discordId);
-        if (!discordId.matches("\\d+"))
-            return false;
         sendAsync("/link", payload);
         return true;
     }
 
     public void onRoundStart() {
-        Map<String, List<UUID>> teams = new HashMap<>();
-        Set<String> teamNames = TeamManager.getInstance().getAllTeams();
-        for (String teamName : teamNames) {
-            Set<UUID> members = TeamManager.getInstance().getTeamMembers(teamName);
-            teams.put(teamName, new ArrayList<>(members));
+        try {
+            Map<String, List<UUID>> teams = new HashMap<>();
+            TeamManager teamManager = TeamManager.getInstance();
+            if (teamManager == null) {
+                BingoBackpack.LOGGER.warn("TeamManager is null, cannot start Discord round");
+                return;
+            }
+            Set<String> teamNames = teamManager.getAllTeams();
+            if (teamNames != null) {
+                for (String teamName : teamNames) {
+                    if (teamName != null && !teamName.isEmpty()) {
+                        Set<UUID> members = teamManager.getTeamMembers(teamName);
+                        if (members != null && !members.isEmpty()) {
+                            teams.put(teamName, new ArrayList<>(members));
+                        }
+                    }
+                }
+            }
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("teams", teams);
+            sendAsync("/round/start", payload);
+        } catch (Exception e) {
+            BingoBackpack.LOGGER.error("Error preparing Discord round start", e);
         }
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("teams", teams);
-        sendAsync("/round/start", payload);
     }
 
     public void onRoundEnd() {
