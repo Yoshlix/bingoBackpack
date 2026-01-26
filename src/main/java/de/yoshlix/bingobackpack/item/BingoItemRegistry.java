@@ -90,6 +90,7 @@ public class BingoItemRegistry {
         register(new MobPheromone());
         register(new TunnelDrill());
         register(new Paranoia());
+        register(new InstantStructure());
 
         // Legacy Example
 
