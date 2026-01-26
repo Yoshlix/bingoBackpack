@@ -130,30 +130,30 @@ public class Paranoia extends BingoItem {
         }
 
         // List of creepy sounds - using only safe, valid sound events
-        // Removed potentially problematic sounds and ensured all are valid SoundEvent instances
-        List<net.minecraft.sounds.SoundEvent> sounds = List.of(
-                SoundEvents.CREEPER_PRIMED,
-                SoundEvents.TNT_PRIMED,
-                SoundEvents.ENDERMAN_SCREAM,
-                SoundEvents.PHANTOM_SWOOP,
-                SoundEvents.WARDEN_HEARTBEAT,
-                SoundEvents.ZOMBIE_BREAK_WOODEN_DOOR,
-                SoundEvents.WITCH_CELEBRATE,
-                SoundEvents.GHAST_SCREAM,
-                SoundEvents.WITHER_SPAWN,
-                SoundEvents.GENERIC_EXPLODE,
-                SoundEvents.AMETHYST_BLOCK_CHIME,
-                SoundEvents.AMETHYST_BLOCK_RESONATE,
-                SoundEvents.SCULK_SHRIEKER_SHRIEK,
-                SoundEvents.ELDER_GUARDIAN_CURSE
-        );
-
+        // Removed potentially problematic sounds and ensured all are valid SoundEvent
+        // instances
+        List<net.minecraft.sounds.SoundEvent> sounds = Arrays.asList(
+                new net.minecraft.sounds.SoundEvent[] {
+                        SoundEvents.CREEPER_PRIMED,
+                        SoundEvents.TNT_PRIMED,
+                        SoundEvents.ENDERMAN_SCREAM,
+                        SoundEvents.PHANTOM_SWOOP,
+                        SoundEvents.WARDEN_HEARTBEAT,
+                        SoundEvents.ZOMBIE_BREAK_WOODEN_DOOR,
+                        SoundEvents.WITCH_CELEBRATE,
+                        SoundEvents.GHAST_SCREAM,
+                        SoundEvents.WITHER_SPAWN,
+                        SoundEvents.AMETHYST_BLOCK_CHIME,
+                        SoundEvents.AMETHYST_BLOCK_RESONATE,
+                        SoundEvents.SCULK_SHRIEKER_SHRIEK,
+                        SoundEvents.ELDER_GUARDIAN_CURSE
+                });
         if (sounds.isEmpty()) {
             return;
         }
 
         net.minecraft.sounds.SoundEvent soundEvent = sounds.get(random.nextInt(sounds.size()));
-        
+
         // Validate sound event is not null
         if (soundEvent == null) {
             return;

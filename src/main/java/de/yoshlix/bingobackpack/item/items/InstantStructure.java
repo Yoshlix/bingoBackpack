@@ -7,7 +7,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -25,7 +26,8 @@ import java.util.Optional;
 import java.util.Random;
 
 /**
- * Instant Structure - Spawnt eine zufällige Vanilla-Struktur an deiner Position.
+ * Instant Structure - Spawnt eine zufällige Vanilla-Struktur an deiner
+ * Position.
  * Kann Häuser, Türme, Hütten und andere nützliche Strukturen spawnen.
  */
 public class InstantStructure extends BingoItem {
@@ -108,9 +110,11 @@ public class InstantStructure extends BingoItem {
             "village/taiga/decoration", "village/snowy/decoration",
             // ========== RUINED PORTALS ==========
             "ruined_portal/desert_1", "ruined_portal/desert_2", "ruined_portal/desert_3", "ruined_portal/desert_4",
-            "ruined_portal/standard_1", "ruined_portal/standard_2", "ruined_portal/standard_3", "ruined_portal/standard_4",
+            "ruined_portal/standard_1", "ruined_portal/standard_2", "ruined_portal/standard_3",
+            "ruined_portal/standard_4",
             "ruined_portal/jungle_1", "ruined_portal/jungle_2", "ruined_portal/jungle_3", "ruined_portal/jungle_4",
-            "ruined_portal/mountain_1", "ruined_portal/mountain_2", "ruined_portal/mountain_3", "ruined_portal/mountain_4",
+            "ruined_portal/mountain_1", "ruined_portal/mountain_2", "ruined_portal/mountain_3",
+            "ruined_portal/mountain_4",
             "ruined_portal/ocean_1", "ruined_portal/ocean_2", "ruined_portal/ocean_3", "ruined_portal/ocean_4",
             "ruined_portal/nether_1", "ruined_portal/nether_2", "ruined_portal/nether_3", "ruined_portal/nether_4",
             "ruined_portal/swamp_1", "ruined_portal/swamp_2", "ruined_portal/swamp_3", "ruined_portal/swamp_4",
@@ -157,8 +161,10 @@ public class InstantStructure extends BingoItem {
             "ocean_ruin/warm_ruin_5", "ocean_ruin/warm_ruin_6", "ocean_ruin/warm_ruin_7", "ocean_ruin/warm_ruin_8",
             "ocean_ruin/cold_ruin_1", "ocean_ruin/cold_ruin_2", "ocean_ruin/cold_ruin_3", "ocean_ruin/cold_ruin_4",
             "ocean_ruin/cold_ruin_5", "ocean_ruin/cold_ruin_6", "ocean_ruin/cold_ruin_7", "ocean_ruin/cold_ruin_8",
-            "trail_ruins/trail_ruins_1", "trail_ruins/trail_ruins_2", "trail_ruins/trail_ruins_3", "trail_ruins/trail_ruins_4",
-            "trail_ruins/trail_ruins_5", "trail_ruins/trail_ruins_6", "trail_ruins/trail_ruins_7", "trail_ruins/trail_ruins_8",
+            "trail_ruins/trail_ruins_1", "trail_ruins/trail_ruins_2", "trail_ruins/trail_ruins_3",
+            "trail_ruins/trail_ruins_4",
+            "trail_ruins/trail_ruins_5", "trail_ruins/trail_ruins_6", "trail_ruins/trail_ruins_7",
+            "trail_ruins/trail_ruins_8",
             "trial_chambers/corridor", "trial_chambers/entrance", "trial_chambers/hall", "trial_chambers/inter_chamber",
             "trial_chambers/jail", "trial_chambers/rampart", "trial_chambers/spawner", "trial_chambers/storage",
             "trial_chambers/supply", "trial_chambers/trap", "trial_chambers/water",
@@ -178,66 +184,112 @@ public class InstantStructure extends BingoItem {
             "bastion/bridge/bridge_piece", "bastion/bridge/legs", "bastion/bridge/wall_base",
             "bastion/bridge/wall_connector", "bastion/bridge/wall_extension", "bastion/bridge/wall_leg",
             "bastion/bridge/wall_side", "bastion/hoglin_stable/air_base", "bastion/hoglin_stable/connector",
-            "bastion/hoglin_stable/entrance", "bastion/hoglin_stable/extension_front", "bastion/hoglin_stable/extension_left",
-            "bastion/hoglin_stable/extension_right", "bastion/hoglin_stable/inside", "bastion/hoglin_stable/large_stable",
-            "bastion/hoglin_stable/large_stable_1", "bastion/hoglin_stable/large_stable_2", "bastion/hoglin_stable/large_stable_3",
-            "bastion/hoglin_stable/rampart_connector", "bastion/hoglin_stable/rampart_extension", "bastion/hoglin_stable/rampart_plates",
-            "bastion/hoglin_stable/ramparts", "bastion/hoglin_stable/small_stable_1", "bastion/hoglin_stable/small_stable_2",
-            "bastion/hoglin_stable/small_stable_3", "bastion/hoglin_stable/small_stable_4", "bastion/hoglin_stable/stable_connector",
-            "bastion/hoglin_stable/wall_base", "bastion/hoglin_stable/wall_connector", "bastion/hoglin_stable/wall_extension",
+            "bastion/hoglin_stable/entrance", "bastion/hoglin_stable/extension_front",
+            "bastion/hoglin_stable/extension_left",
+            "bastion/hoglin_stable/extension_right", "bastion/hoglin_stable/inside",
+            "bastion/hoglin_stable/large_stable",
+            "bastion/hoglin_stable/large_stable_1", "bastion/hoglin_stable/large_stable_2",
+            "bastion/hoglin_stable/large_stable_3",
+            "bastion/hoglin_stable/rampart_connector", "bastion/hoglin_stable/rampart_extension",
+            "bastion/hoglin_stable/rampart_plates",
+            "bastion/hoglin_stable/ramparts", "bastion/hoglin_stable/small_stable_1",
+            "bastion/hoglin_stable/small_stable_2",
+            "bastion/hoglin_stable/small_stable_3", "bastion/hoglin_stable/small_stable_4",
+            "bastion/hoglin_stable/stable_connector",
+            "bastion/hoglin_stable/wall_base", "bastion/hoglin_stable/wall_connector",
+            "bastion/hoglin_stable/wall_extension",
             "bastion/hoglin_stable/wall_leg", "bastion/hoglin_stable/wall_side", "bastion/hoglin_stable/wall_straight",
-            "bastion/stable/air_base", "bastion/stable/connector", "bastion/stable/entrance", "bastion/stable/extension_front",
-            "bastion/stable/extension_left", "bastion/stable/extension_right", "bastion/stable/inside", "bastion/stable/large_stable",
-            "bastion/stable/large_stable_1", "bastion/stable/large_stable_2", "bastion/stable/large_stable_3", "bastion/stable/rampart_connector",
-            "bastion/stable/rampart_extension", "bastion/stable/rampart_plates", "bastion/stable/ramparts", "bastion/stable/small_stable_1",
-            "bastion/stable/small_stable_2", "bastion/stable/small_stable_3", "bastion/stable/small_stable_4", "bastion/stable/stable_connector",
-            "bastion/stable/wall_base", "bastion/stable/wall_connector", "bastion/stable/wall_extension", "bastion/stable/wall_leg",
-            "bastion/stable/wall_side", "bastion/stable/wall_straight", "bastion/treasure/big_air_full", "bastion/treasure/big_air_full_2",
-            "bastion/treasure/big_air_half", "bastion/treasure/big_air_half_2", "bastion/treasure/brains_1", "bastion/treasure/brains_2",
-            "bastion/treasure/brains_3", "bastion/treasure/brains_4", "bastion/treasure/connector", "bastion/treasure/entrance",
-            "bastion/treasure/entrance_2", "bastion/treasure/rampart_plates", "bastion/treasure/ramparts", "bastion/treasure/roof",
+            "bastion/stable/air_base", "bastion/stable/connector", "bastion/stable/entrance",
+            "bastion/stable/extension_front",
+            "bastion/stable/extension_left", "bastion/stable/extension_right", "bastion/stable/inside",
+            "bastion/stable/large_stable",
+            "bastion/stable/large_stable_1", "bastion/stable/large_stable_2", "bastion/stable/large_stable_3",
+            "bastion/stable/rampart_connector",
+            "bastion/stable/rampart_extension", "bastion/stable/rampart_plates", "bastion/stable/ramparts",
+            "bastion/stable/small_stable_1",
+            "bastion/stable/small_stable_2", "bastion/stable/small_stable_3", "bastion/stable/small_stable_4",
+            "bastion/stable/stable_connector",
+            "bastion/stable/wall_base", "bastion/stable/wall_connector", "bastion/stable/wall_extension",
+            "bastion/stable/wall_leg",
+            "bastion/stable/wall_side", "bastion/stable/wall_straight", "bastion/treasure/big_air_full",
+            "bastion/treasure/big_air_full_2",
+            "bastion/treasure/big_air_half", "bastion/treasure/big_air_half_2", "bastion/treasure/brains_1",
+            "bastion/treasure/brains_2",
+            "bastion/treasure/brains_3", "bastion/treasure/brains_4", "bastion/treasure/connector",
+            "bastion/treasure/entrance",
+            "bastion/treasure/entrance_2", "bastion/treasure/rampart_plates", "bastion/treasure/ramparts",
+            "bastion/treasure/roof",
             "bastion/treasure/roof_2", "bastion/treasure/roof_3", "bastion/treasure/roof_4", "bastion/treasure/roof_5",
             "bastion/treasure/roof_6", "bastion/treasure/roof_7", "bastion/treasure/roof_8", "bastion/treasure/roof_9",
-            "bastion/treasure/roof_10", "bastion/treasure/roof_11", "bastion/treasure/roof_12", "bastion/treasure/roof_13",
-            "bastion/treasure/roof_14", "bastion/treasure/roof_15", "bastion/treasure/roof_16", "bastion/treasure/roof_17",
-            "bastion/treasure/roof_18", "bastion/treasure/roof_19", "bastion/treasure/roof_20", "bastion/treasure/roof_21",
-            "bastion/treasure/roof_22", "bastion/treasure/roof_23", "bastion/treasure/roof_24", "bastion/treasure/roof_25",
-            "bastion/treasure/roof_26", "bastion/treasure/roof_27", "bastion/treasure/roof_28", "bastion/treasure/roof_29",
-            "bastion/treasure/roof_30", "bastion/treasure/roof_31", "bastion/treasure/roof_32", "bastion/treasure/roof_33",
-            "bastion/treasure/roof_34", "bastion/treasure/roof_35", "bastion/treasure/roof_36", "bastion/treasure/roof_37",
-            "bastion/treasure/roof_38", "bastion/treasure/roof_39", "bastion/treasure/roof_40", "bastion/treasure/roof_41",
-            "bastion/treasure/roof_42", "bastion/treasure/roof_43", "bastion/treasure/roof_44", "bastion/treasure/roof_45",
-            "bastion/treasure/roof_46", "bastion/treasure/roof_47", "bastion/treasure/roof_48", "bastion/treasure/roof_49",
-            "bastion/treasure/roof_50", "bastion/treasure/roof_51", "bastion/treasure/roof_52", "bastion/treasure/roof_53",
-            "bastion/treasure/roof_54", "bastion/treasure/roof_55", "bastion/treasure/roof_56", "bastion/treasure/roof_57",
-            "bastion/treasure/roof_58", "bastion/treasure/roof_59", "bastion/treasure/roof_60", "bastion/treasure/roof_61",
-            "bastion/treasure/roof_62", "bastion/treasure/roof_63", "bastion/treasure/roof_64", "bastion/treasure/roof_65",
-            "bastion/treasure/roof_66", "bastion/treasure/roof_67", "bastion/treasure/roof_68", "bastion/treasure/roof_69",
-            "bastion/treasure/roof_70", "bastion/treasure/roof_71", "bastion/treasure/roof_72", "bastion/treasure/roof_73",
-            "bastion/treasure/roof_74", "bastion/treasure/roof_75", "bastion/treasure/roof_76", "bastion/treasure/roof_77",
-            "bastion/treasure/roof_78", "bastion/treasure/roof_79", "bastion/treasure/roof_80", "bastion/treasure/roof_81",
-            "bastion/treasure/roof_82", "bastion/treasure/roof_83", "bastion/treasure/roof_84", "bastion/treasure/roof_85",
-            "bastion/treasure/roof_86", "bastion/treasure/roof_87", "bastion/treasure/roof_88", "bastion/treasure/roof_89",
-            "bastion/treasure/roof_90", "bastion/treasure/roof_91", "bastion/treasure/roof_92", "bastion/treasure/roof_93",
-            "bastion/treasure/roof_94", "bastion/treasure/roof_95", "bastion/treasure/roof_96", "bastion/treasure/roof_97",
+            "bastion/treasure/roof_10", "bastion/treasure/roof_11", "bastion/treasure/roof_12",
+            "bastion/treasure/roof_13",
+            "bastion/treasure/roof_14", "bastion/treasure/roof_15", "bastion/treasure/roof_16",
+            "bastion/treasure/roof_17",
+            "bastion/treasure/roof_18", "bastion/treasure/roof_19", "bastion/treasure/roof_20",
+            "bastion/treasure/roof_21",
+            "bastion/treasure/roof_22", "bastion/treasure/roof_23", "bastion/treasure/roof_24",
+            "bastion/treasure/roof_25",
+            "bastion/treasure/roof_26", "bastion/treasure/roof_27", "bastion/treasure/roof_28",
+            "bastion/treasure/roof_29",
+            "bastion/treasure/roof_30", "bastion/treasure/roof_31", "bastion/treasure/roof_32",
+            "bastion/treasure/roof_33",
+            "bastion/treasure/roof_34", "bastion/treasure/roof_35", "bastion/treasure/roof_36",
+            "bastion/treasure/roof_37",
+            "bastion/treasure/roof_38", "bastion/treasure/roof_39", "bastion/treasure/roof_40",
+            "bastion/treasure/roof_41",
+            "bastion/treasure/roof_42", "bastion/treasure/roof_43", "bastion/treasure/roof_44",
+            "bastion/treasure/roof_45",
+            "bastion/treasure/roof_46", "bastion/treasure/roof_47", "bastion/treasure/roof_48",
+            "bastion/treasure/roof_49",
+            "bastion/treasure/roof_50", "bastion/treasure/roof_51", "bastion/treasure/roof_52",
+            "bastion/treasure/roof_53",
+            "bastion/treasure/roof_54", "bastion/treasure/roof_55", "bastion/treasure/roof_56",
+            "bastion/treasure/roof_57",
+            "bastion/treasure/roof_58", "bastion/treasure/roof_59", "bastion/treasure/roof_60",
+            "bastion/treasure/roof_61",
+            "bastion/treasure/roof_62", "bastion/treasure/roof_63", "bastion/treasure/roof_64",
+            "bastion/treasure/roof_65",
+            "bastion/treasure/roof_66", "bastion/treasure/roof_67", "bastion/treasure/roof_68",
+            "bastion/treasure/roof_69",
+            "bastion/treasure/roof_70", "bastion/treasure/roof_71", "bastion/treasure/roof_72",
+            "bastion/treasure/roof_73",
+            "bastion/treasure/roof_74", "bastion/treasure/roof_75", "bastion/treasure/roof_76",
+            "bastion/treasure/roof_77",
+            "bastion/treasure/roof_78", "bastion/treasure/roof_79", "bastion/treasure/roof_80",
+            "bastion/treasure/roof_81",
+            "bastion/treasure/roof_82", "bastion/treasure/roof_83", "bastion/treasure/roof_84",
+            "bastion/treasure/roof_85",
+            "bastion/treasure/roof_86", "bastion/treasure/roof_87", "bastion/treasure/roof_88",
+            "bastion/treasure/roof_89",
+            "bastion/treasure/roof_90", "bastion/treasure/roof_91", "bastion/treasure/roof_92",
+            "bastion/treasure/roof_93",
+            "bastion/treasure/roof_94", "bastion/treasure/roof_95", "bastion/treasure/roof_96",
+            "bastion/treasure/roof_97",
             "bastion/treasure/roof_98", "bastion/treasure/roof_99", "bastion/treasure/roof_100",
-            "nether_fortress/bridge", "nether_fortress/bridge_end", "nether_fortress/bridge_gate", "nether_fortress/bridge_stairs",
-            "nether_fortress/corridor_floor", "nether_fortress/corridor_nether_wart_room", "nether_fortress/corridor_roof",
-            "nether_fortress/corridor_stairs", "nether_fortress/crossing", "nether_fortress/entrance", "nether_fortress/hall",
-            "nether_fortress/hall_crossing", "nether_fortress/hall_entrance", "nether_fortress/hall_room", "nether_fortress/hall_stairs",
-            "nether_fortress/room", "nether_fortress/room_crossing", "nether_fortress/room_entrance", "nether_fortress/room_exit",
-            "nether_fortress/room_lava", "nether_fortress/room_stairs", "nether_fortress/small_corridor", "nether_fortress/small_corridor_crossing",
-            "nether_fortress/small_corridor_left_turn", "nether_fortress/small_corridor_right_turn", "nether_fortress/small_hall",
+            "nether_fortress/bridge", "nether_fortress/bridge_end", "nether_fortress/bridge_gate",
+            "nether_fortress/bridge_stairs",
+            "nether_fortress/corridor_floor", "nether_fortress/corridor_nether_wart_room",
+            "nether_fortress/corridor_roof",
+            "nether_fortress/corridor_stairs", "nether_fortress/crossing", "nether_fortress/entrance",
+            "nether_fortress/hall",
+            "nether_fortress/hall_crossing", "nether_fortress/hall_entrance", "nether_fortress/hall_room",
+            "nether_fortress/hall_stairs",
+            "nether_fortress/room", "nether_fortress/room_crossing", "nether_fortress/room_entrance",
+            "nether_fortress/room_exit",
+            "nether_fortress/room_lava", "nether_fortress/room_stairs", "nether_fortress/small_corridor",
+            "nether_fortress/small_corridor_crossing",
+            "nether_fortress/small_corridor_left_turn", "nether_fortress/small_corridor_right_turn",
+            "nether_fortress/small_hall",
             "nether_fortress/small_room", "nether_fortress/small_room_crossing", "nether_fortress/small_room_entrance",
             "nether_fortress/small_room_exit", "nether_fortress/small_room_stairs", "nether_fortress/staircase",
-            "nether_fortress/staircase_crossing", "nether_fortress/staircase_entrance", "nether_fortress/staircase_left_turn",
+            "nether_fortress/staircase_crossing", "nether_fortress/staircase_entrance",
+            "nether_fortress/staircase_left_turn",
             "nether_fortress/staircase_right_turn", "nether_fortress/staircase_stairs", "nether_fortress/start",
             "nether_fortress/start_entrance", "nether_fortress/start_piece", "nether_fortress/start_stairs",
             "end_city/base_floor", "end_city/base_roof", "end_city/bridge_end", "end_city/bridge_piece",
             "end_city/fat_tower_base", "end_city/fat_tower_middle", "end_city/fat_tower_top", "end_city/portal",
             "end_city/ship", "end_city/tower_base", "end_city/tower_floor", "end_city/tower_middle",
-            "end_city/tower_piece", "end_city/tower_top"
-    );
+            "end_city/tower_piece", "end_city/tower_top");
 
     @Override
     public String getId() {
@@ -275,7 +327,6 @@ public class InstantStructure extends BingoItem {
         }
 
         // Fallback: Spawne eine einfache, nützliche Struktur
-        spawnCustomStructure(level, player);
         return true;
     }
 
@@ -290,7 +341,7 @@ public class InstantStructure extends BingoItem {
 
         // Wähle eine zufällige Struktur
         String structureId = STRUCTURE_IDS.get(random.nextInt(STRUCTURE_IDS.size()));
-        ResourceLocation structureLocation = ResourceLocation.fromNamespaceAndPath("minecraft", structureId);
+        Identifier structureLocation = Identifier.parse("minecraft:" + structureId);
 
         Optional<StructureTemplate> template = structureManager.get(structureLocation);
         if (template.isEmpty()) {
@@ -298,8 +349,8 @@ public class InstantStructure extends BingoItem {
         }
 
         StructureTemplate structure = template.get();
-        BlockPos structureSize = structure.getSize();
-        
+        BlockPos structureSize = new BlockPos(structure.getSize());
+
         // Finde eine geeignete Position (vor dem Spieler)
         BlockPos spawnPos = findSpawnPosition(level, player, structureSize);
         if (spawnPos == null) {
@@ -316,8 +367,7 @@ public class InstantStructure extends BingoItem {
                         .setRandom(level.getRandom())
                         .setMirror(net.minecraft.world.level.block.Mirror.NONE)
                         .setRotation(net.minecraft.world.level.block.Rotation.NONE)
-                        .setIgnoreEntities(false)
-                        .setChunkBounds(null),
+                        .setIgnoreEntities(false),
                 level.getRandom(),
                 2 // Block update flags
         );
@@ -325,171 +375,11 @@ public class InstantStructure extends BingoItem {
         // Sound und Nachricht
         level.playSound(null, spawnPos, SoundEvents.END_PORTAL_SPAWN, SoundSource.BLOCKS, 1.0f, 1.0f);
         player.sendSystemMessage(Component.literal("§a§l✨ Struktur gespawnt! ✨"));
-        player.sendSystemMessage(Component.literal("§7Eine §e" + getStructureDisplayName(structureId) + " §7wurde bei §f" +
-                spawnPos.getX() + ", " + spawnPos.getY() + ", " + spawnPos.getZ() + " §7erstellt!"));
+        player.sendSystemMessage(
+                Component.literal("§7Eine §e" + getStructureDisplayName(structureId) + " §7wurde bei §f" +
+                        spawnPos.getX() + ", " + spawnPos.getY() + ", " + spawnPos.getZ() + " §7erstellt!"));
 
         return true;
-    }
-
-    /**
-     * Spawnt eine einfache, nützliche Struktur als Fallback.
-     */
-    private void spawnCustomStructure(ServerLevel level, ServerPlayer player) {
-        BlockPos spawnPos = findSpawnPosition(level, player, new BlockPos(7, 5, 7));
-        if (spawnPos == null) {
-            spawnPos = player.blockPosition().relative(player.getDirection(), 3);
-        }
-
-        // Spawne eine zufällige einfache Struktur
-        int structureType = random.nextInt(3);
-        
-        switch (structureType) {
-            case 0 -> spawnSmallHouse(level, spawnPos);
-            case 1 -> spawnTower(level, spawnPos);
-            case 2 -> spawnLootHut(level, spawnPos);
-        }
-
-        level.playSound(null, spawnPos, SoundEvents.END_PORTAL_SPAWN, SoundSource.BLOCKS, 1.0f, 1.0f);
-        player.sendSystemMessage(Component.literal("§a§l✨ Struktur gespawnt! ✨"));
-        player.sendSystemMessage(Component.literal("§7Eine Struktur wurde bei §f" +
-                spawnPos.getX() + ", " + spawnPos.getY() + ", " + spawnPos.getZ() + " §7erstellt!"));
-    }
-
-    /**
-     * Spawnt ein kleines Haus.
-     */
-    private void spawnSmallHouse(ServerLevel level, BlockPos pos) {
-        // Fundament
-        for (int x = 0; x < 5; x++) {
-            for (int z = 0; z < 5; z++) {
-                level.setBlock(pos.offset(x, -1, z), Blocks.OAK_PLANKS.defaultBlockState(), 3);
-            }
-        }
-
-        // Wände
-        for (int y = 0; y < 3; y++) {
-            for (int x = 0; x < 5; x++) {
-                level.setBlock(pos.offset(x, y, 0), Blocks.OAK_LOG.defaultBlockState(), 3);
-                level.setBlock(pos.offset(x, y, 4), Blocks.OAK_LOG.defaultBlockState(), 3);
-            }
-            for (int z = 1; z < 4; z++) {
-                level.setBlock(pos.offset(0, y, z), Blocks.OAK_LOG.defaultBlockState(), 3);
-                level.setBlock(pos.offset(4, y, z), Blocks.OAK_LOG.defaultBlockState(), 3);
-            }
-        }
-
-        // Dach
-        for (int x = 0; x < 5; x++) {
-            for (int z = 0; z < 5; z++) {
-                level.setBlock(pos.offset(x, 3, z), Blocks.OAK_PLANKS.defaultBlockState(), 3);
-            }
-        }
-
-        // Tür
-        level.setBlock(pos.offset(2, 0, 0), Blocks.AIR.defaultBlockState(), 3);
-        level.setBlock(pos.offset(2, 1, 0), Blocks.AIR.defaultBlockState(), 3);
-        level.setBlock(pos.offset(2, 0, -1), Blocks.OAK_DOOR.defaultBlockState()
-                .setValue(net.minecraft.world.level.block.DoorBlock.FACING, Direction.SOUTH), 3);
-        level.setBlock(pos.offset(2, 1, -1), Blocks.OAK_DOOR.defaultBlockState()
-                .setValue(net.minecraft.world.level.block.DoorBlock.FACING, Direction.SOUTH)
-                .setValue(net.minecraft.world.level.block.DoorBlock.HALF, net.minecraft.world.level.block.DoorBlock.DoorHalf.UPPER), 3);
-
-        // Fenster
-        level.setBlock(pos.offset(0, 1, 2), Blocks.GLASS.defaultBlockState(), 3);
-        level.setBlock(pos.offset(4, 1, 2), Blocks.GLASS.defaultBlockState(), 3);
-
-        // Kiste mit Loot
-        BlockPos chestPos = pos.offset(2, 0, 2);
-        level.setBlock(chestPos, Blocks.CHEST.defaultBlockState(), 3);
-        if (level.getBlockEntity(chestPos) instanceof ChestBlockEntity chest) {
-            chest.setItem(0, new ItemStack(Items.IRON_INGOT, 4 + random.nextInt(8)));
-            chest.setItem(1, new ItemStack(Items.BREAD, 4 + random.nextInt(8)));
-            chest.setItem(2, new ItemStack(Items.COAL, 8 + random.nextInt(16)));
-        }
-    }
-
-    /**
-     * Spawnt einen Turm.
-     */
-    private void spawnTower(ServerLevel level, BlockPos pos) {
-        int height = 8 + random.nextInt(5);
-        
-        // Fundament
-        for (int x = 0; x < 3; x++) {
-            for (int z = 0; z < 3; z++) {
-                level.setBlock(pos.offset(x, -1, z), Blocks.STONE_BRICKS.defaultBlockState(), 3);
-            }
-        }
-
-        // Turm
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < 3; x++) {
-                for (int z = 0; z < 3; z++) {
-                    if (x == 0 || x == 2 || z == 0 || z == 2) {
-                        level.setBlock(pos.offset(x, y, z), Blocks.STONE_BRICKS.defaultBlockState(), 3);
-                    } else {
-                        level.setBlock(pos.offset(x, y, z), Blocks.AIR.defaultBlockState(), 3);
-                    }
-                }
-            }
-            
-            // Fenster alle 2 Ebenen
-            if (y > 0 && y < height - 1 && y % 2 == 0) {
-                level.setBlock(pos.offset(1, y, 0), Blocks.GLASS.defaultBlockState(), 3);
-            }
-        }
-
-        // Dach
-        for (int x = 0; x < 3; x++) {
-            for (int z = 0; z < 3; z++) {
-                level.setBlock(pos.offset(x, height, z), Blocks.STONE_BRICK_SLAB.defaultBlockState(), 3);
-            }
-        }
-    }
-
-    /**
-     * Spawnt eine kleine Hütte mit Loot.
-     */
-    private void spawnLootHut(ServerLevel level, BlockPos pos) {
-        // Fundament
-        for (int x = 0; x < 4; x++) {
-            for (int z = 0; z < 4; z++) {
-                level.setBlock(pos.offset(x, -1, z), Blocks.COBBLESTONE.defaultBlockState(), 3);
-            }
-        }
-
-        // Wände
-        for (int y = 0; y < 2; y++) {
-            for (int x = 0; x < 4; x++) {
-                level.setBlock(pos.offset(x, y, 0), Blocks.COBBLESTONE.defaultBlockState(), 3);
-                level.setBlock(pos.offset(x, y, 3), Blocks.COBBLESTONE.defaultBlockState(), 3);
-            }
-            for (int z = 1; z < 3; z++) {
-                level.setBlock(pos.offset(0, y, z), Blocks.COBBLESTONE.defaultBlockState(), 3);
-                level.setBlock(pos.offset(3, y, z), Blocks.COBBLESTONE.defaultBlockState(), 3);
-            }
-        }
-
-        // Dach
-        for (int x = 0; x < 4; x++) {
-            for (int z = 0; z < 4; z++) {
-                level.setBlock(pos.offset(x, 2, z), Blocks.OAK_PLANKS.defaultBlockState(), 3);
-            }
-        }
-
-        // Tür
-        level.setBlock(pos.offset(1, 0, 0), Blocks.AIR.defaultBlockState(), 3);
-        level.setBlock(pos.offset(1, 1, 0), Blocks.AIR.defaultBlockState(), 3);
-
-        // Kiste mit gutem Loot
-        BlockPos chestPos = pos.offset(2, 0, 2);
-        level.setBlock(chestPos, Blocks.CHEST.defaultBlockState(), 3);
-        if (level.getBlockEntity(chestPos) instanceof ChestBlockEntity chest) {
-            chest.setItem(0, new ItemStack(Items.DIAMOND, 2 + random.nextInt(4)));
-            chest.setItem(1, new ItemStack(Items.GOLD_INGOT, 4 + random.nextInt(8)));
-            chest.setItem(2, new ItemStack(Items.IRON_INGOT, 8 + random.nextInt(16)));
-            chest.setItem(3, new ItemStack(Items.EMERALD, 2 + random.nextInt(6)));
-        }
     }
 
     /**
@@ -499,27 +389,27 @@ public class InstantStructure extends BingoItem {
     private BlockPos findSpawnPosition(ServerLevel level, ServerPlayer player, BlockPos structureSize) {
         BlockPos playerPos = player.blockPosition();
         Direction facing = player.getDirection();
-        
+
         // Für große Strukturen: suche weiter weg
         int maxSearchDistance = Math.max(50, Math.max(structureSize.getX(), structureSize.getZ()) + 20);
-        
+
         // Versuche Position vor dem Spieler
         BlockPos tryPos = playerPos.relative(facing, 5).relative(facing.getClockWise(), structureSize.getX() / 2);
-        
+
         // Finde passende Y-Position
         int y = findGroundLevel(level, tryPos);
         if (y == -1) {
             // Fallback: direkt beim Spieler
             y = playerPos.getY();
         }
-        
+
         tryPos = new BlockPos(tryPos.getX(), y, tryPos.getZ());
-        
+
         // Prüfe, ob genug Platz ist (lockerer für große Strukturen)
         if (hasEnoughSpace(level, tryPos, structureSize, true)) {
             return tryPos;
         }
-        
+
         // Versuche andere Positionen in größerem Radius
         for (int offset = 5; offset <= maxSearchDistance; offset += 5) {
             for (Direction dir : Direction.Plane.HORIZONTAL) {
@@ -533,7 +423,7 @@ public class InstantStructure extends BingoItem {
                 }
             }
         }
-        
+
         // Letzter Versuch: Spawne einfach in der Luft wenn nötig (für maximale Chaos!)
         return new BlockPos(playerPos.getX(), playerPos.getY() + 10, playerPos.getZ());
     }
@@ -544,9 +434,9 @@ public class InstantStructure extends BingoItem {
     private int findGroundLevel(ServerLevel level, BlockPos pos) {
         for (int y = pos.getY() + 5; y >= pos.getY() - 10; y--) {
             BlockPos checkPos = new BlockPos(pos.getX(), y, pos.getZ());
-            if (!level.getBlockState(checkPos).isAir() && 
-                level.getBlockState(checkPos.above()).isAir() &&
-                level.getBlockState(checkPos.above(2)).isAir()) {
+            if (!level.getBlockState(checkPos).isAir() &&
+                    level.getBlockState(checkPos.above()).isAir() &&
+                    level.getBlockState(checkPos.above(2)).isAir()) {
                 return y + 1;
             }
         }
@@ -555,7 +445,9 @@ public class InstantStructure extends BingoItem {
 
     /**
      * Prüft, ob genug Platz für die Struktur vorhanden ist.
-     * @param allowOverwrite Wenn true, erlaubt Überschreiben von natürlichen Blöcken (für Chaos!)
+     * 
+     * @param allowOverwrite Wenn true, erlaubt Überschreiben von natürlichen
+     *                       Blöcken (für Chaos!)
      */
     private boolean hasEnoughSpace(ServerLevel level, BlockPos pos, BlockPos size, boolean allowOverwrite) {
         // Für sehr große Strukturen: lockere Prüfung
@@ -571,7 +463,7 @@ public class InstantStructure extends BingoItem {
             }
             return true; // Große Strukturen spawnen immer - CHAOS!
         }
-        
+
         // Normale Prüfung für kleinere Strukturen
         for (int x = 0; x < size.getX(); x++) {
             for (int y = 0; y < size.getY(); y++) {
@@ -583,8 +475,8 @@ public class InstantStructure extends BingoItem {
                     if (!allowOverwrite) {
                         // Prüfe nur Luft oder nicht-solide Blöcke
                         BlockState state = level.getBlockState(checkPos);
-                        if (state.isSolid() && !state.is(Blocks.GRASS) && !state.is(Blocks.DIRT) && 
-                            !state.is(Blocks.STONE) && !state.is(Blocks.SAND)) {
+                        if (state.isSolid() && !state.is(Blocks.GRASS_BLOCK) && !state.is(Blocks.DIRT) &&
+                                !state.is(Blocks.STONE) && !state.is(Blocks.SAND)) {
                             return false;
                         }
                     }
@@ -599,30 +491,52 @@ public class InstantStructure extends BingoItem {
      */
     private String getStructureDisplayName(String structureId) {
         if (structureId.contains("village")) {
-            if (structureId.contains("plains")) return "Dorfhaus (Ebenen)";
-            if (structureId.contains("desert")) return "Dorfhaus (Wüste)";
-            if (structureId.contains("savanna")) return "Dorfhaus (Savanne)";
-            if (structureId.contains("taiga")) return "Dorfhaus (Taiga)";
-            if (structureId.contains("snowy")) return "Dorfhaus (Schnee)";
+            if (structureId.contains("plains"))
+                return "Dorfhaus (Ebenen)";
+            if (structureId.contains("desert"))
+                return "Dorfhaus (Wüste)";
+            if (structureId.contains("savanna"))
+                return "Dorfhaus (Savanne)";
+            if (structureId.contains("taiga"))
+                return "Dorfhaus (Taiga)";
+            if (structureId.contains("snowy"))
+                return "Dorfhaus (Schnee)";
             return "Dorfhaus";
         }
-        if (structureId.contains("ruined_portal")) return "Ruiniertes Portal";
-        if (structureId.contains("pillager")) return "Wachturm";
-        if (structureId.contains("igloo")) return "Iglu";
-        if (structureId.contains("swamp_hut")) return "Hexenhütte";
-        if (structureId.contains("desert_well")) return "Wüstenbrunnen";
-        if (structureId.contains("ocean_ruin")) return "Ozeanruine";
-        if (structureId.contains("trail_ruins")) return "Pfadruine";
-        if (structureId.contains("trial_chambers")) return "Probenkammer";
-        if (structureId.contains("ancient_city")) return "§c§lANTIKE STADT §r§7(CHAOS!)";
-        if (structureId.contains("mineshaft")) return "Minenschacht";
-        if (structureId.contains("jungle_pyramid")) return "§e§lDschungeltempel";
-        if (structureId.contains("desert_pyramid")) return "§e§lWüstentempel";
-        if (structureId.contains("woodland_mansion")) return "§5§lWaldanwesen §r§7(RIESIG!)";
-        if (structureId.contains("ocean_monument")) return "§b§lOzeanmonument §r§7(RIESIG!)";
-        if (structureId.contains("bastion")) return "§cBastion §7(Nether)";
-        if (structureId.contains("nether_fortress")) return "§c§lNetherfestung §r§7(RIESIG!)";
-        if (structureId.contains("end_city")) return "§d§lEndstadt §r§7(RIESIG!)";
+        if (structureId.contains("ruined_portal"))
+            return "Ruiniertes Portal";
+        if (structureId.contains("pillager"))
+            return "Wachturm";
+        if (structureId.contains("igloo"))
+            return "Iglu";
+        if (structureId.contains("swamp_hut"))
+            return "Hexenhütte";
+        if (structureId.contains("desert_well"))
+            return "Wüstenbrunnen";
+        if (structureId.contains("ocean_ruin"))
+            return "Ozeanruine";
+        if (structureId.contains("trail_ruins"))
+            return "Pfadruine";
+        if (structureId.contains("trial_chambers"))
+            return "Probenkammer";
+        if (structureId.contains("ancient_city"))
+            return "§c§lANTIKE STADT §r§7(CHAOS!)";
+        if (structureId.contains("mineshaft"))
+            return "Minenschacht";
+        if (structureId.contains("jungle_pyramid"))
+            return "§e§lDschungeltempel";
+        if (structureId.contains("desert_pyramid"))
+            return "§e§lWüstentempel";
+        if (structureId.contains("woodland_mansion"))
+            return "§5§lWaldanwesen §r§7(RIESIG!)";
+        if (structureId.contains("ocean_monument"))
+            return "§b§lOzeanmonument §r§7(RIESIG!)";
+        if (structureId.contains("bastion"))
+            return "§cBastion §7(Nether)";
+        if (structureId.contains("nether_fortress"))
+            return "§c§lNetherfestung §r§7(RIESIG!)";
+        if (structureId.contains("end_city"))
+            return "§d§lEndstadt §r§7(RIESIG!)";
         return "Struktur";
     }
 
