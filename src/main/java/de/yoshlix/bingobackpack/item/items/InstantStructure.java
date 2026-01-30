@@ -18,6 +18,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
 
@@ -339,12 +340,22 @@ public class InstantStructure extends BingoItem {
             return false;
         }
 
-        // Wähle eine zufällige Struktur
-        String structureId = STRUCTURE_IDS.get(random.nextInt(STRUCTURE_IDS.size()));
-        Identifier structureLocation = Identifier.parse("minecraft:" + structureId);
+        // Filtere alle IDs, die wirklich existieren
+        List<String> availableStructures = STRUCTURE_IDS.stream()
+                .filter(id -> structureManager.get(Identifier.parse("minecraft:" + id)).isPresent())
+                .toList();
 
+        if (availableStructures.isEmpty()) {
+            player.sendSystemMessage(Component.literal("§cKeine Vanilla-Strukturen verfügbar!"));
+            return false;
+        }
+
+        // Wähle eine zufällige existierende Struktur
+        String structureId = availableStructures.get(random.nextInt(availableStructures.size()));
+        Identifier structureLocation = Identifier.parse("minecraft:" + structureId);
         Optional<StructureTemplate> template = structureManager.get(structureLocation);
         if (template.isEmpty()) {
+            player.sendSystemMessage(Component.literal("§cStruktur konnte nicht geladen werden!"));
             return false;
         }
 
@@ -367,7 +378,8 @@ public class InstantStructure extends BingoItem {
                         .setRandom(level.getRandom())
                         .setMirror(net.minecraft.world.level.block.Mirror.NONE)
                         .setRotation(net.minecraft.world.level.block.Rotation.NONE)
-                        .setIgnoreEntities(false),
+                        .setIgnoreEntities(true)
+                        .setLiquidSettings(LiquidSettings.IGNORE_WATERLOGGING),
                 level.getRandom(),
                 2 // Block update flags
         );

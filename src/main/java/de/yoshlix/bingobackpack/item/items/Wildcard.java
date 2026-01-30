@@ -38,7 +38,7 @@ public class Wildcard extends BingoItem {
 
     @Override
     public ItemRarity getRarity() {
-        return ItemRarity.LEGENDARY;
+        return ItemRarity.EPIC;
     }
 
     @Override
