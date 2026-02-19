@@ -49,6 +49,9 @@ public class BingoBackpack implements ModInitializer {
 			StarterKitCommand.register(dispatcher);
 		});
 
+		// Register lobby restrictions (fishing rod & levitation potions)
+		LobbyRestrictions.register();
+
 		// Initialize managers when server starts
 		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
 			TeamManager.getInstance().init(server);

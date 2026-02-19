@@ -439,6 +439,12 @@ public class BackpackCommand {
                 config.bingoItemsEnabled = value;
                 BingoItemManager.getInstance().setDropsEnabled(value);
                 break;
+            case "lobbyfishingrod":
+                config.lobbyDisableFishingRod = value;
+                break;
+            case "lobbylevitation":
+                config.lobbyDisableLevitationPotions = value;
+                break;
             default:
                 ctx.getSource().sendFailure(Component.literal("Unknown config flag: " + configName));
                 return 0;
@@ -460,7 +466,11 @@ public class BackpackCommand {
                         "§7- Hunger: " + (config.hungerMixinEnabled ? "§aEnabled" : "§cDisabled") + "\n" +
                         "§7- Spawn Teleport: " + (config.spawnTeleportEnabled ? "§aEnabled" : "§cDisabled") + "\n" +
                         "§7- Bingo Items: " + (config.bingoItemsEnabled ? "§aEnabled" : "§cDisabled") + "\n" +
-                        "§7- Drop Multiplier: §e" + config.bingoItemsDropMultiplier + "x"),
+                        "§7- Drop Multiplier: §e" + config.bingoItemsDropMultiplier + "x" + "\n" +
+                        "§7- Lobby Angel verbieten: " + (config.lobbyDisableFishingRod ? "§aEnabled" : "§cDisabled")
+                        + "\n" +
+                        "§7- Lobby Levitation verbieten: "
+                        + (config.lobbyDisableLevitationPotions ? "§aEnabled" : "§cDisabled")),
                 false);
 
         return 1;

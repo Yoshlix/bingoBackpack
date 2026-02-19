@@ -81,6 +81,10 @@ public class ModConfig {
     public double dropChanceEpic = 0.003;
     public double dropChanceLegendary = 0.001;
 
+    // Lobby Restrictions
+    public boolean lobbyDisableFishingRod = true;
+    public boolean lobbyDisableLevitationPotions = true;
+
     // Discord Integration
     public boolean discordEnabled = false;
     public String discordToken = "";
