@@ -2,9 +2,15 @@ package de.yoshlix.bingobackpack.item.items;
 
 import de.yoshlix.bingobackpack.BingoBackpack;
 import de.yoshlix.bingobackpack.item.BingoItem;
+import de.yoshlix.bingobackpack.item.BingoItemRegistry;
 import de.yoshlix.bingobackpack.item.ItemRarity;
+import me.jfenn.bingo.api.BingoApi;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.Style;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -18,8 +24,8 @@ import java.util.*;
 
 /**
  * Mob-Pheromone - For 2 minutes, hostile mobs spawn much more frequently around
- * you.
- * Perfect for farming mob drops for Bingo objectives!
+ * a target player (self or enemy).
+ * Perfect for farming mob drops or sabotaging enemies!
  */
 public class MobPheromone extends BingoItem {
 
@@ -41,7 +47,7 @@ public class MobPheromone extends BingoItem {
 
     @Override
     public String getDescription() {
-        return "Für 2 Minuten: Monster spawnen 3x häufiger um dich herum!";
+        return "Für 2 Minuten: Monster spawnen 3x häufiger um dich oder einen Gegner!";
     }
 
     @Override
@@ -51,38 +57,157 @@ public class MobPheromone extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
-        // Check if already active
-        if (isActive(player.getUUID())) {
-            long remaining = getRemainingSeconds(player.getUUID());
-            player.sendSystemMessage(
-                    Component.literal("§6Pheromone bereits aktiv! Noch §e" + remaining + "s §6übrig."));
+        // Show selection menu
+        player.sendSystemMessage(Component.literal(""));
+        player.sendSystemMessage(Component.literal("§6§l═══════ Wähle ein Ziel ═══════"));
+        player.sendSystemMessage(Component.literal(""));
+
+        // Option 1: Self
+        Component selfButton = Component.literal("  [MIR SELBST]  ")
+                .withStyle(Style.EMPTY
+                        .withColor(ChatFormatting.GREEN)
+                        .withBold(true)
+                        .withClickEvent(new ClickEvent.RunCommand("/backpack perks pheromone self"))
+                        .withHoverEvent(new HoverEvent.ShowText(
+                                Component.literal("§aMonster spawnen bei dir!\n§7Gut zum Farmen von Items."))));
+
+        // Option 2: Enemy
+        Component enemyButton = Component.literal("  [GEGNER TEAM]  ")
+                .withStyle(Style.EMPTY
+                        .withColor(ChatFormatting.RED)
+                        .withBold(true)
+                        .withClickEvent(new ClickEvent.RunCommand("/backpack perks pheromone enemy"))
+                        .withHoverEvent(new HoverEvent.ShowText(
+                                Component.literal("§cMonster spawnen bei einem Gegner!\n§7Gut zur Sabotage."))));
+
+        player.sendSystemMessage(Component.empty().append(selfButton).append(Component.literal("   ")).append(enemyButton));
+        player.sendSystemMessage(Component.literal(""));
+        player.sendSystemMessage(Component.literal("§6§l══════════════════════════════"));
+
+        return false; // Don't consume yet, wait for selection
+    }
+
+    /**
+     * Activates the pheromone effect based on player choice.
+     * @param user The player who used the item
+     * @param targetSelf True if targeting self, false if targeting random enemy
+     * @return True if successful (and item should be consumed)
+     */
+    public static boolean activatePheromones(ServerPlayer user, boolean targetSelf) {
+        ServerPlayer targetPlayer = user;
+        boolean isSabotage = false;
+
+        if (!targetSelf) {
+            // Find a random enemy
+            targetPlayer = findRandomEnemy(user);
+            if (targetPlayer == null) {
+                user.sendSystemMessage(Component.literal("§cKein geeigneter Gegner gefunden (oder alle geschützt)!"));
+                return false;
+            }
+            isSabotage = true;
+        }
+
+        // Check if already active on target
+        if (isActive(targetPlayer.getUUID())) {
+            if (isSabotage) {
+                user.sendSystemMessage(Component.literal("§cDieser Spieler hat bereits Pheromone!"));
+            } else {
+                long remaining = getRemainingSeconds(targetPlayer.getUUID());
+                user.sendSystemMessage(Component.literal("§6Pheromone bereits aktiv! Noch §e" + remaining + "s §6übrig."));
+            }
             return false;
         }
 
         // Activate pheromones
         long endTime = System.currentTimeMillis() + (DURATION_SECONDS * 1000L);
-        activePheromones.put(player.getUUID(), endTime);
+        activePheromones.put(targetPlayer.getUUID(), endTime);
 
-        // Play creepy sound
-        player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
+        // Effects
+        targetPlayer.level().playSound(null, targetPlayer.getX(), targetPlayer.getY(), targetPlayer.getZ(),
                 SoundEvents.WITHER_AMBIENT, SoundSource.HOSTILE, 0.5f, 0.5f);
 
-        player.sendSystemMessage(Component.literal(""));
-        player.sendSystemMessage(Component.literal("§4§l☠ MOB-PHEROMONE AKTIVIERT! ☠"));
-        player.sendSystemMessage(Component.literal("§cMonster werden von dir angezogen..."));
-        player.sendSystemMessage(Component.literal("§7Dauer: §c" + DURATION_SECONDS + " Sekunden"));
-        player.sendSystemMessage(Component.literal(""));
+        // Messages
+        if (isSabotage) {
+            // Message to User
+            user.sendSystemMessage(Component.literal("§aDu hast Mob-Pheromone auf §e" + targetPlayer.getName().getString() + " §aangesetzt!"));
+            
+            // Message to Target
+            targetPlayer.sendSystemMessage(Component.literal(""));
+            targetPlayer.sendSystemMessage(Component.literal("§4§l☠ JEMAND HAT MOB-PHEROMONE AUF DICH ANGESETZT! ☠"));
+            targetPlayer.sendSystemMessage(Component.literal("§cMonster werden von dir angezogen..."));
+            targetPlayer.sendSystemMessage(Component.literal("§7Dauer: §c" + DURATION_SECONDS + " Sekunden"));
+            targetPlayer.sendSystemMessage(Component.literal(""));
+            
+            // Broadcast
+            broadcastToOthers(targetPlayer, user, "§8[§4☠§8] §7" + user.getName().getString() + " hat Mob-Pheromone auf " + targetPlayer.getName().getString() + " hetzt!");
+        } else {
+            // Self usage
+            user.sendSystemMessage(Component.literal(""));
+            user.sendSystemMessage(Component.literal("§2§l☠ MOB-PHEROMONE AKTIVIERT! ☠"));
+            user.sendSystemMessage(Component.literal("§aMonster werden von dir angezogen (Farm-Modus)..."));
+            user.sendSystemMessage(Component.literal("§7Dauer: §a" + DURATION_SECONDS + " Sekunden"));
+            user.sendSystemMessage(Component.literal(""));
+            
+            broadcastToOthers(user, user, "§8[§4☠§8] §7" + user.getName().getString() + " hat Mob-Pheromone aktiviert...");
+        }
 
-        // Broadcast to others
+        // Consume item
+        consumeItem(user);
+        return true;
+    }
+
+    private static ServerPlayer findRandomEnemy(ServerPlayer player) {
+        var teams = BingoApi.getTeams();
+        if (teams == null) return null;
+
+        var playerTeam = teams.getTeamForPlayer(player.getUUID());
+        if (playerTeam == null) return null;
+
         var server = ((ServerLevel) player.level()).getServer();
-        for (var p : server.getPlayerList().getPlayers()) {
-            if (p != player) {
-                p.sendSystemMessage(Component.literal("§8[§4☠§8] §7" + player.getName().getString() +
-                        " hat Mob-Pheromone aktiviert..."));
+        if (server == null) return null;
+
+        List<ServerPlayer> enemies = new ArrayList<>();
+
+        for (var team : teams) {
+            if (team.getId().equals(playerTeam.getId())) continue;
+
+            // Check Team Shield
+            if (TeamShield.isTeamShielded(team.getId())) continue;
+
+            for (UUID memberId : team.getPlayers()) {
+                if (TeamShield.isPlayerShielded(memberId)) continue;
+                
+                ServerPlayer enemy = server.getPlayerList().getPlayer(memberId);
+                if (enemy != null && enemy.isAlive() && !enemy.isSpectator()) {
+                    enemies.add(enemy);
+                }
             }
         }
 
-        return true;
+        if (enemies.isEmpty()) return null;
+        return enemies.get(new Random().nextInt(enemies.size()));
+    }
+
+    private static void broadcastToOthers(ServerPlayer target, ServerPlayer source, String message) {
+        var server = ((ServerLevel) target.level()).getServer();
+        if (server == null) return;
+        
+        for (var p : server.getPlayerList().getPlayers()) {
+            if (p != target && p != source) {
+                p.sendSystemMessage(Component.literal(message));
+            }
+        }
+    }
+
+    private static void consumeItem(ServerPlayer player) {
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            var stack = player.getInventory().getItem(i);
+            var itemOpt = BingoItemRegistry.fromItemStack(stack);
+            if (itemOpt.isPresent() && itemOpt.get().getId().equals("mob_pheromone")) {
+                stack.shrink(1);
+                return;
+            }
+        }
     }
 
     /**
@@ -263,7 +388,7 @@ public class MobPheromone extends BingoItem {
     public List<Component> getExtraLore() {
         return List.of(
                 Component.literal("§c☠ Monster spawnen häufiger!"),
-                Component.literal("§7Perfekt für Mob-Drop-Objectives"),
+                Component.literal("§7Wähle: Bei DIR oder einem GEGNER!"),
                 Component.literal("§7Dauer: " + DURATION_SECONDS + " Sekunden"));
     }
 

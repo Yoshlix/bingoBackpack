@@ -57,7 +57,46 @@ public class BingoItemCommands {
                         // /backpack perks wildcard <item_id>
                         .then(Commands.literal("wildcard")
                                 .then(Commands.argument("selection", StringArgumentType.greedyString())
-                                        .executes(BingoItemCommands::handleWildcard)))));
+                                        .executes(BingoItemCommands::handleWildcard)))
+                        
+                        // /backpack perks pheromone <self|enemy>
+                        .then(Commands.literal("pheromone")
+                                .then(Commands.argument("target", StringArgumentType.word())
+                                        .executes(BingoItemCommands::handlePheromone)))));
+    }
+
+    private static int handlePheromone(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
+        String target = StringArgumentType.getString(context, "target");
+        boolean targetSelf;
+
+        if (target.equalsIgnoreCase("self")) {
+            targetSelf = true;
+        } else if (target.equalsIgnoreCase("enemy")) {
+            targetSelf = false;
+        } else {
+            player.sendSystemMessage(Component.literal("§cUngültiges Ziel! Nutze 'self' oder 'enemy'."));
+            return 0;
+        }
+
+        // Verify player has the item
+        boolean hasItem = false;
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            var stack = player.getInventory().getItem(i);
+            var itemOpt = BingoItemRegistry.fromItemStack(stack);
+            if (itemOpt.isPresent() && itemOpt.get() instanceof MobPheromone) {
+                hasItem = true;
+                break;
+            }
+        }
+
+        if (!hasItem) {
+            player.sendSystemMessage(Component.literal("§cDu hast keine Mob-Pheromone!"));
+            return 0;
+        }
+
+        MobPheromone.activatePheromones(player, targetSelf);
+        return 1;
     }
 
     private static int handleSelect(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
