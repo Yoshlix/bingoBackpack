@@ -57,6 +57,8 @@ public class BingoItemRegistry {
         register(new InventorySwap());
         register(new ItemSwap());
         register(new DeleteEnemyItems());
+        register(new BanishEpicItem());
+        register(new BanishLegendaryItem());
 
         // Buff Items
         register(new SpeedBoost1Min());

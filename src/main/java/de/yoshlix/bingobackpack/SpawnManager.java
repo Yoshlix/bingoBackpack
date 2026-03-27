@@ -33,6 +33,11 @@ public class SpawnManager {
         SpawnPoint s = spawns.get(player.getUUID());
         if (s == null || server == null)
             return false;
+            
+        if (de.yoshlix.bingobackpack.banish.BanishManager.getInstance().isBanished(player)) {
+            player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§4§lVERBANNT! §r§cDu bist im Banish und kannst /spawn nicht nutzen!"));
+            return false;
+        }
 
         // Always teleport to Overworld
         ServerLevel overworld = server.overworld();

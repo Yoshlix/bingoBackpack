@@ -62,6 +62,13 @@ public class BingoItemManager {
 
         BingoItem item = itemOpt.get();
 
+        // Check if player is banished
+        if (de.yoshlix.bingobackpack.banish.BanishManager.getInstance().isBanished(player)) {
+            player.sendSystemMessage(
+                    Component.literal("§4§lVERBANNT! §r§cDu kannst keine Items verwenden, während du verbannt bist!"));
+            return false;
+        }
+
         // Check if player is locked down
         if (Lockdown.isLocked(player.getUUID())) {
             int remaining = Lockdown.getRemainingLockdownSeconds(player.getUUID());
