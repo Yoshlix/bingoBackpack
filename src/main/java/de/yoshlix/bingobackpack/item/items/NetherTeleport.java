@@ -2,7 +2,7 @@ package de.yoshlix.bingobackpack.item.items;
 
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
-import de.yoshlix.bingobackpack.ModConfig;
+import de.yoshlix.bingobackpack.item.TeleportSafety;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -10,6 +10,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 /**
@@ -60,20 +61,15 @@ public class NetherTeleport extends BingoItem {
         int netherX = (int) (player.getX() / 8);
         int netherZ = (int) (player.getZ() / 8);
 
-        // Force chunk generation
-        nether.getChunk(netherX >> 4, netherZ >> 4);
+        Optional<BlockPos> safePos = TeleportSafety.findSafeSurface(nether, netherX, netherZ);
 
-        // Find safe Y position in Nether
-        int safeY = findSafeYNether(nether, netherX, netherZ);
-
-        if (safeY == -1) {
+        if (safePos.isEmpty()) {
             // Try a few random positions nearby
             for (int i = 0; i < 10; i++) {
                 int offsetX = netherX + random.nextInt(32) - 16;
                 int offsetZ = netherZ + random.nextInt(32) - 16;
-                nether.getChunk(offsetX >> 4, offsetZ >> 4);
-                safeY = findSafeYNether(nether, offsetX, offsetZ);
-                if (safeY != -1) {
+                safePos = TeleportSafety.findSafeSurface(nether, offsetX, offsetZ);
+                if (safePos.isPresent()) {
                     netherX = offsetX;
                     netherZ = offsetZ;
                     break;
@@ -81,56 +77,21 @@ public class NetherTeleport extends BingoItem {
             }
         }
 
-        if (safeY == -1) {
-            // Fallback to configured nether fallback Y
-            safeY = ModConfig.getInstance().netherFallbackY;
+        if (safePos.isEmpty()) {
+            player.sendSystemMessage(Component.literal("§cKein sicherer Ort im Nether gefunden. Item wurde nicht verbraucht."));
+            return false;
         }
 
+        BlockPos targetPos = safePos.get();
+
         // Teleport to Nether
-        player.teleportTo(nether, netherX + 0.5, safeY, netherZ + 0.5,
+        player.teleportTo(nether, targetPos.getX() + 0.5, targetPos.getY(), targetPos.getZ() + 0.5,
                 java.util.Set.of(), player.getYRot(), player.getXRot(), true);
 
         player.sendSystemMessage(Component.literal("§c§l🔥 NETHER! §rDu wurdest in den Nether teleportiert!"));
-        player.sendSystemMessage(Component.literal("§7Position: §f" + netherX + ", " + safeY + ", " + netherZ));
+        player.sendSystemMessage(Component.literal("§7Position: §f" + targetPos.getX() + ", " + targetPos.getY() + ", " + targetPos.getZ()));
 
         return true;
-    }
-
-    private int findSafeYNether(ServerLevel level, int x, int z) {
-        int minY = level.getMinY();
-        int maxSafeY = ModConfig.getInstance().netherCeilingY - 2;
-
-        // Scan from bottom to top
-        for (int y = minY + 1; y <= maxSafeY; y++) {
-            if (isSafePosition(level, x, y, z)) {
-                return y;
-            }
-        }
-
-        return -1;
-    }
-
-    private boolean isSafePosition(ServerLevel level, int x, int y, int z) {
-        BlockPos groundPos = new BlockPos(x, y - 1, z);
-        BlockPos feetPos = new BlockPos(x, y, z);
-        BlockPos headPos = new BlockPos(x, y + 1, z);
-
-        var groundState = level.getBlockState(groundPos);
-        var feetState = level.getBlockState(feetPos);
-        var headState = level.getBlockState(headPos);
-
-        // Ground must be solid and not lava
-        boolean groundIsSafe = !groundState.isAir()
-                && groundState.getFluidState().isEmpty()
-                && !groundState.getCollisionShape(level, groundPos).isEmpty();
-
-        // Feet and head must be passable and not lava
-        boolean feetIsPassable = feetState.getCollisionShape(level, feetPos).isEmpty()
-                && feetState.getFluidState().isEmpty();
-        boolean headIsPassable = headState.getCollisionShape(level, headPos).isEmpty()
-                && headState.getFluidState().isEmpty();
-
-        return groundIsSafe && feetIsPassable && headIsPassable;
     }
 
     @Override

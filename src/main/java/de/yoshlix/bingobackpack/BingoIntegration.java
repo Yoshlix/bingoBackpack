@@ -12,6 +12,7 @@ import net.minecraft.world.scores.Scoreboard;
 
 import java.util.*;
 
+import de.yoshlix.bingobackpack.item.TemporaryItemStateManager;
 import me.jfenn.bingo.api.BingoApi;
 import me.jfenn.bingo.api.data.BingoGameStatus;
 
@@ -26,6 +27,7 @@ public class BingoIntegration {
     private MinecraftServer server;
     private boolean enabled = true;
     private boolean backpackGiven = false;
+    private BingoGameStatus lastGameStatus = null;
 
     // Track which players have already received their backpack for their current
     // team
@@ -70,7 +72,13 @@ public class BingoIntegration {
 
         syncScoreboardTeams();
 
-        if (!backpackGiven && BingoApi.getGame().getStatus().equals(BingoGameStatus.PLAYING)) {
+        BingoGameStatus currentStatus = BingoApi.getGame().getStatus();
+        if (currentStatus != lastGameStatus) {
+            handleGameStatusChange(server, lastGameStatus, currentStatus);
+            lastGameStatus = currentStatus;
+        }
+
+        if (!backpackGiven && currentStatus.equals(BingoGameStatus.PLAYING)) {
             for (PlayerTeam scoPlayerTeam : server.getScoreboard().getPlayerTeams()) {
                 for (String name : scoPlayerTeam.getPlayers()) {
                     ServerPlayer player = server.getPlayerList().getPlayerByName(name);
@@ -93,9 +101,17 @@ public class BingoIntegration {
             DiscordService.getInstance().onRoundStart();
         }
 
-        if (BingoApi.getGame().getStatus().equals(BingoGameStatus.POSTGAME)) {
+        if (currentStatus.equals(BingoGameStatus.POSTGAME)) {
             backpackGiven = false;
-            // Discord Round End
+        }
+    }
+
+    private void handleGameStatusChange(MinecraftServer server, BingoGameStatus previousStatus, BingoGameStatus currentStatus) {
+        if (currentStatus == BingoGameStatus.PLAYING || previousStatus == BingoGameStatus.PLAYING) {
+            TemporaryItemStateManager.clearForRoundReset(server);
+        }
+
+        if (previousStatus == BingoGameStatus.PLAYING && currentStatus == BingoGameStatus.POSTGAME) {
             DiscordService.getInstance().onRoundEnd();
         }
     }

@@ -248,6 +248,22 @@ public class Lockdown extends BingoItem {
         return remaining > 0 ? (int) (remaining / 1000) : 0;
     }
 
+    /**
+     * Remove an active lockdown from a player.
+     */
+    public static boolean clearLockdown(UUID playerId) {
+        if (!isLocked(playerId)) {
+            return false;
+        }
+        lockedPlayers.remove(playerId);
+        return true;
+    }
+
+    public static void clearAllLockdowns() {
+        pendingLockdowns.clear();
+        lockedPlayers.clear();
+    }
+
     @Override
     public List<Component> getExtraLore() {
         return List.of(

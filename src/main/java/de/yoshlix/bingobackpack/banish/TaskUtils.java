@@ -3,7 +3,6 @@ package de.yoshlix.bingobackpack.banish;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 
 public class TaskUtils {
     public static void fill(ServerLevel level, BlockPos start, BlockPos end, Block block) {

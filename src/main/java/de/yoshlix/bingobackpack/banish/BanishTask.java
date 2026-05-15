@@ -15,20 +15,34 @@ public interface BanishTask {
     Vec3 generate(ServerLevel level, BlockPos origin);
 
     /**
+     * Returns the task description shown to the player.
+     */
+    String getTaskDescription();
+
+    /**
      * Check if the player has won (e.g. they pressed the win button).
      * This is called when the player interacts with a block.
      */
     boolean isWinCondition(ServerLevel level, BlockPos interactedBlock, BlockPos origin);
 
     /**
-     * Called every tick for the player. Can be used for custom logic (e.g. failing parkour, waves).
+     * Called every second (20 ticks) for banished players.
+     * Use data.taskTime as seconds, not ticks.
      */
     default void tick(ServerPlayer player, BlockPos origin) {
-        // Fallback for parkour or falling into the void
-        if (player.getY() < 180) {
+        // Fallback for falling into the void
+        if (player.getY() < 150) {
             Vec3 spawn = getSpawnPos(origin);
             player.teleportTo(spawn.x, spawn.y, spawn.z);
         }
+    }
+
+    /**
+     * Called when a banished player respawns after death.
+     * Override to re-give equipment etc.
+     */
+    default void onRespawn(ServerPlayer player, BlockPos origin) {
+        // default: do nothing
     }
 
     /**

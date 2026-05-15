@@ -3,17 +3,20 @@ package de.yoshlix.bingobackpack.item.items;
 import de.yoshlix.bingobackpack.BingoBackpack;
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
+import de.yoshlix.bingobackpack.item.TeleportSafety;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.structure.Structure;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 /**
@@ -24,6 +27,30 @@ import java.util.Random;
 public class InstantStructure extends BingoItem {
 
     private final Random random = new Random();
+    private static final List<String> OVERWORLD_STRUCTURES = List.of(
+            "minecraft:desert_pyramid",
+            "minecraft:jungle_pyramid",
+            "minecraft:igloo",
+            "minecraft:swamp_hut",
+            "minecraft:pillager_outpost",
+            "minecraft:shipwreck_beached",
+            "minecraft:ruined_portal",
+            "minecraft:ruined_portal_desert",
+            "minecraft:ruined_portal_jungle",
+            "minecraft:ruined_portal_swamp",
+            "minecraft:ruined_portal_mountain",
+            "minecraft:village_desert",
+            "minecraft:village_plains",
+            "minecraft:village_savanna",
+            "minecraft:village_taiga",
+            "minecraft:mansion");
+    private static final List<String> NETHER_STRUCTURES = List.of(
+            "minecraft:fortress",
+            "minecraft:bastion_remnant",
+            "minecraft:ruined_portal_nether",
+            "minecraft:nether_fossil");
+    private static final List<String> END_STRUCTURES = List.of(
+            "minecraft:end_city");
 
     @Override
     public String getId() {
@@ -52,21 +79,12 @@ public class InstantStructure extends BingoItem {
         }
 
         try {
-            // Hole alle registrierten Strukturen
-            var registry = level.registryAccess().lookupOrThrow(Registries.STRUCTURE);
-            List<ResourceKey<Structure>> structures = new ArrayList<>();
-            // listElements returns Stream<Holder.Reference<T>>, we extract the key
-            registry.listElements().forEach(holder -> structures.add(holder.key()));
+            List<String> candidates = getStructureCandidates(level);
 
-            if (structures.isEmpty()) {
+            if (candidates.isEmpty()) {
                 player.sendSystemMessage(Component.literal("§cKeine Strukturen gefunden!"));
                 return false;
             }
-
-            // Wähle eine zufällige Struktur
-            ResourceKey<Structure> randomStructure = structures.get(random.nextInt(structures.size()));
-            // .identifier() instead of .location() based on project mappings
-            String structureId = randomStructure.identifier().toString();
 
             // Erstelle CommandSourceStack mit Admin-Rechten für den Befehl (Server Console)
             CommandSourceStack source = level.getServer().createCommandSourceStack()
@@ -74,20 +92,40 @@ public class InstantStructure extends BingoItem {
                     .withRotation(player.getRotationVector())
                     .withSuppressedOutput();
 
-            // Position (direkt beim Spieler)
-            BlockPos pos = player.blockPosition();
+            Optional<BlockPos> safePos = TeleportSafety.findSafeSurface(level, player.blockPosition().getX(), player.blockPosition().getZ());
+            if (safePos.isEmpty()) {
+                player.sendSystemMessage(Component.literal("§cKein sicherer Platz für eine Struktur gefunden."));
+                return false;
+            }
 
-            // Führe /place structure aus
-            // Syntax: /place structure <structure> [pos]
-            String command = String.format("place structure %s %d %d %d", 
-                    structureId, pos.getX(), pos.getY(), pos.getZ());
-            
-            level.getServer().getCommands().performPrefixedCommand(source, command);
+            BlockPos pos = safePos.get().offset(0, -1, 0);
+            String structureId = null;
+            boolean placed = false;
+
+            for (int i = 0; i < Math.min(8, candidates.size()); i++) {
+                structureId = candidates.remove(random.nextInt(candidates.size()));
+                if (!isRegisteredStructure(level, structureId)) {
+                    continue;
+                }
+
+                // Syntax: /place structure <structure> [pos]
+                String command = String.format("place structure %s %d %d %d",
+                        structureId, pos.getX(), pos.getY(), pos.getZ());
+
+                level.getServer().getCommands().performPrefixedCommand(source, command);
+                placed = true;
+                break;
+            }
+
+            if (!placed) {
+                player.sendSystemMessage(Component.literal("§cKonnte keine vollständige Struktur platzieren. Item wurde nicht verbraucht."));
+                return false;
+            }
 
             // Feedback an den Spieler
             player.sendSystemMessage(Component.literal("§a§l✨ Struktur gespawnt! ✨"));
             player.sendSystemMessage(
-                    Component.literal("§7Eine §e" + structureId + " §7wurde beschworen!"));
+                    Component.literal("§7Eine vollständige §e" + structureId + " §7wurde beschworen!"));
             
             return true;
 
@@ -98,13 +136,27 @@ public class InstantStructure extends BingoItem {
         }
     }
 
+    private List<String> getStructureCandidates(ServerLevel level) {
+        if (level.dimension() == Level.NETHER) {
+            return new java.util.ArrayList<>(NETHER_STRUCTURES);
+        }
+        if (level.dimension() == Level.END) {
+            return new java.util.ArrayList<>(END_STRUCTURES);
+        }
+        return new java.util.ArrayList<>(OVERWORLD_STRUCTURES);
+    }
+
+    private boolean isRegisteredStructure(ServerLevel level, String structureId) {
+        var registry = level.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+        ResourceKey<Structure> key = ResourceKey.create(Registries.STRUCTURE, Identifier.parse(structureId));
+        return registry.get(key).isPresent();
+    }
+
     @Override
     public List<Component> getExtraLore() {
         return List.of(
-                Component.literal("§7Spawnt eine §czufällige §7Minecraft-Struktur"),
-                Component.literal("§7Kann §eALLES §7sein:"),
-                Component.literal("§7Dörfer, Festungen, Antike Städte..."),
-                Component.literal("§c§l⚠ MAXIMALES CHAOS! ⚠"),
-                Component.literal("§7Die ganze Struktur wird generiert!"));
+                Component.literal("§7Spawnt eine §czufällige §7große Vanilla-Struktur"),
+                Component.literal("§7z.B. Wüstentempel, Dorf, Outpost"),
+                Component.literal("§c§l⚠ MAXIMALES CHAOS! ⚠"));
     }
 }

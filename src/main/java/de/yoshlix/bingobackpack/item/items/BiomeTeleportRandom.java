@@ -3,6 +3,7 @@ package de.yoshlix.bingobackpack.item.items;
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
 import de.yoshlix.bingobackpack.ModConfig;
+import de.yoshlix.bingobackpack.item.TeleportSafety;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
@@ -11,9 +12,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.levelgen.Heightmap;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 /**
@@ -99,9 +100,15 @@ public class BiomeTeleportRandom extends BingoItem {
         }
 
         BlockPos targetPos = found.getFirst();
-        int safeY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, targetPos.getX(), targetPos.getZ()) + 1;
+        Optional<BlockPos> safePos = TeleportSafety.findSafeSurfaceAround(level, targetPos, 24);
+        if (safePos.isEmpty()) {
+            player.sendSystemMessage(Component.literal("§cBiom gefunden, aber kein sicherer Landeplatz in der Nähe. Item wurde nicht verbraucht."));
+            return false;
+        }
 
-        player.teleportTo(level, targetPos.getX() + 0.5, safeY, targetPos.getZ() + 0.5,
+        targetPos = safePos.get();
+
+        player.teleportTo(level, targetPos.getX() + 0.5, targetPos.getY(), targetPos.getZ() + 0.5,
                 java.util.Set.of(), player.getYRot(), player.getXRot(), true);
 
         player.sendSystemMessage(Component.literal("§a§lWOOSH! §rDu bist jetzt in: §e" + formatBiomeName(biomeName)));

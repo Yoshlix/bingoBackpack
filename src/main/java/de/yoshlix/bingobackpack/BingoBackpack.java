@@ -43,6 +43,7 @@ public class BingoBackpack implements ModInitializer {
 		// Register commands
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 			BackpackCommand.register(dispatcher);
+			BackpackAdminCommand.register(dispatcher);
 			TeleportToSpawnCommand.register(dispatcher);
 			BingoItemCommands.register(dispatcher);
 			UpCommand.register(dispatcher);
@@ -58,6 +59,7 @@ public class BingoBackpack implements ModInitializer {
 			BackpackManager.getInstance().init(server);
 			BingoIntegration.getInstance().init(server);
 			SpawnManager.getInstance().init(server);
+			de.yoshlix.bingobackpack.banish.BanishManager.getInstance().init(server);
 			BingoRewardSystem.getInstance().init(server);
 			DiscordService.getInstance().init(server);
 			LOGGER.info("BingoBackpack initialized!");

@@ -384,6 +384,10 @@ public class MobPheromone extends BingoItem {
         return remaining > 0 ? remaining / 1000 : 0;
     }
 
+    public static void clearAllPheromones() {
+        activePheromones.clear();
+    }
+
     @Override
     public List<Component> getExtraLore() {
         return List.of(

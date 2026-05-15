@@ -190,6 +190,10 @@ public class ResetFieldProgress extends BingoItem {
         return pendingResets.containsKey(playerId);
     }
 
+    public static void clearPendingResets() {
+        pendingResets.clear();
+    }
+
     @Override
     public List<Component> getExtraLore() {
         return List.of(

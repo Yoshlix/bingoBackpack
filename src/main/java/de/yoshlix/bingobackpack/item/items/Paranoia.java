@@ -189,6 +189,11 @@ public class Paranoia extends BingoItem {
         return endTime != null && System.currentTimeMillis() < endTime;
     }
 
+    public static void clearAllParanoias() {
+        activeParanoias.clear();
+        nextSoundTimes.clear();
+    }
+
     private List<ServerPlayer> getTargetableEnemies(ServerPlayer player) {
         var teams = me.jfenn.bingo.api.BingoApi.getTeams();
         if (teams == null)

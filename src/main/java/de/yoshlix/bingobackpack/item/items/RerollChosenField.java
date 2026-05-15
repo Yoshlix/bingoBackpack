@@ -191,6 +191,10 @@ public class RerollChosenField extends BingoItem {
         return pendingRerolls.containsKey(playerId);
     }
 
+    public static void clearPendingRerolls() {
+        pendingRerolls.clear();
+    }
+
     @Override
     public List<Component> getExtraLore() {
         return List.of(

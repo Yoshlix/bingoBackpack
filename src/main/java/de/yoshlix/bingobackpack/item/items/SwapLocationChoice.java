@@ -2,6 +2,7 @@ package de.yoshlix.bingobackpack.item.items;
 
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
+import de.yoshlix.bingobackpack.item.TeleportSafety;
 import me.jfenn.bingo.api.BingoApi;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.ClickEvent;
@@ -155,6 +156,12 @@ public class SwapLocationChoice extends BingoItem {
         float targetYaw = target.getYRot();
         float targetPitch = target.getXRot();
 
+        if (!TeleportSafety.isSafeTeleportPosition(targetLevel, targetX, targetY, targetZ)
+                || !TeleportSafety.isSafeTeleportPosition(playerLevel, playerX, playerY, playerZ)) {
+            player.sendSystemMessage(Component.literal("§cPositions-Tausch abgebrochen: Eine Zielposition ist nicht sicher."));
+            return false;
+        }
+
         // Swap positions
         player.teleportTo(targetLevel, targetX, targetY, targetZ,
                 java.util.Set.of(), targetYaw, targetPitch, true);
@@ -188,6 +195,10 @@ public class SwapLocationChoice extends BingoItem {
 
     public static boolean hasPendingSwap(UUID playerId) {
         return pendingSwaps.containsKey(playerId);
+    }
+
+    public static void clearPendingSwaps() {
+        pendingSwaps.clear();
     }
 
     private static String formatBiomeName(String biomeName) {

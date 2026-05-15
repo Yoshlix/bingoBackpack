@@ -6,7 +6,9 @@ import de.yoshlix.bingobackpack.item.ItemRarity;
 import de.yoshlix.bingobackpack.ModConfig;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.Style;
+import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Abilities;
 
@@ -20,6 +22,7 @@ public class Flight1Min extends BingoItem {
 
     // Track players with temporary flight
     private static final Map<UUID, Long> flightEndTimes = new HashMap<>();
+    private static final Set<UUID> flightWarningSent = new HashSet<>();
 
     @Override
     public String getId() {
@@ -80,6 +83,7 @@ public class Flight1Min extends BingoItem {
         Flight5Min.clearFlightTime(player.getUUID());
         Flight15Min.clearFlightTime(player.getUUID());
         flightEndTimes.put(player.getUUID(), newEndTime);
+        flightWarningSent.remove(player.getUUID());
 
         int totalSeconds = (int) ((newEndTime - System.currentTimeMillis()) / 1000);
         int minutes = totalSeconds / 60;
@@ -107,6 +111,14 @@ public class Flight1Min extends BingoItem {
 
         while (iterator.hasNext()) {
             var entry = iterator.next();
+            long remainingMillis = entry.getValue() - now;
+            if (remainingMillis <= 10_000L && remainingMillis > 0 && flightWarningSent.add(entry.getKey())) {
+                ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
+                if (player != null) {
+                    sendFlightWarning(player);
+                }
+            }
+
             if (now >= entry.getValue()) {
                 ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
                 if (player != null && !player.isCreative() && !player.isSpectator()) {
@@ -118,9 +130,17 @@ public class Flight1Min extends BingoItem {
 
                     player.sendSystemMessage(Component.literal("§c§l✈ §rDeine Flugfähigkeit ist abgelaufen!"));
                 }
+                flightWarningSent.remove(entry.getKey());
                 iterator.remove();
             }
         }
+    }
+
+    private static void sendFlightWarning(ServerPlayer player) {
+        player.connection.send(new ClientboundSetTitlesAnimationPacket(5, 40, 10));
+        player.connection.send(new ClientboundSetTitleTextPacket(Component.literal("§c§lNUR NOCH 10 SEKUNDEN FLUG!")));
+        player.connection.send(new ClientboundSetSubtitleTextPacket(Component.literal("§7Lande jetzt besser sicher.")));
+        player.sendSystemMessage(Component.literal("§c§l✈ WARNUNG: §r§cNur noch 10 Sekunden Flugzeit!"));
     }
 
     /**
@@ -155,6 +175,12 @@ public class Flight1Min extends BingoItem {
      */
     public static void clearFlightTime(UUID playerId) {
         flightEndTimes.remove(playerId);
+        flightWarningSent.remove(playerId);
+    }
+
+    public static void clearAllFlightTimes() {
+        flightEndTimes.clear();
+        flightWarningSent.clear();
     }
 
     @Override

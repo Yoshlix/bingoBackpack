@@ -144,6 +144,10 @@ public class Wildcard extends BingoItem {
         pendingSelections.remove(playerId);
     }
 
+    public static void clearPendingSelections() {
+        pendingSelections.clear();
+    }
+
     @Override
     public List<Component> getExtraLore() {
         return List.of(

@@ -234,6 +234,11 @@ public class TimeoutPlayer extends BingoItem {
         return pendingTimeouts.containsKey(playerId);
     }
 
+    public static void clearAllTimeouts() {
+        pendingTimeouts.clear();
+        timedOutPlayers.clear();
+    }
+
     @Override
     public List<Component> getExtraLore() {
         return List.of(

@@ -192,6 +192,10 @@ public class CompleteChosenBingoField extends BingoItem {
         return pendingSelections.containsKey(playerId);
     }
 
+    public static void clearPendingSelections() {
+        pendingSelections.clear();
+    }
+
     @Override
     public List<Component> getExtraLore() {
         return List.of(

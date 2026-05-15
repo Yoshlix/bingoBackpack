@@ -185,6 +185,10 @@ public class TeamShield extends BingoItem {
         }
     }
 
+    public static void clearAllShields() {
+        shieldedTeams.clear();
+    }
+
     @Override
     public List<Component> getExtraLore() {
         return List.of(
