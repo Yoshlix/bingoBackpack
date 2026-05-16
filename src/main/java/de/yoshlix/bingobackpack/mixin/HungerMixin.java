@@ -1,6 +1,5 @@
 package de.yoshlix.bingobackpack.mixin;
 
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.food.FoodData;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -24,16 +23,14 @@ public class HungerMixin {
     private float exhaustionLevel;
 
     @Inject(method = "tick", at = @At("HEAD"))
-    private void onTick(Player player, CallbackInfo ci) {
+    private void onTick(ServerPlayer player, CallbackInfo ci) {
 
         if (!ModConfig.getInstance().hungerMixinEnabled)
             return;
 
         // Don't restore hunger for banished players — they should feel hunger in the arena
-        if (player instanceof ServerPlayer serverPlayer) {
-            if (BanishManager.getInstance().isBanished(serverPlayer)) {
-                return; // Skip hunger restoration, let natural hunger work
-            }
+        if (BanishManager.getInstance().isBanished(player)) {
+            return; // Skip hunger restoration, let natural hunger work
         }
 
         // Only update if values are not already at max to avoid unnecessary operations

@@ -72,7 +72,16 @@ public class BingoIntegration {
 
         syncScoreboardTeams();
 
-        BingoGameStatus currentStatus = BingoApi.getGame().getStatus();
+        var game = BingoApi.getGame();
+        if (game == null || game.getStatus() == null) {
+            return;
+        }
+
+        BingoGameStatus currentStatus = game.getStatus();
+        if (lastGameStatus == null) {
+            lastGameStatus = currentStatus;
+        }
+
         if (currentStatus != lastGameStatus) {
             handleGameStatusChange(server, lastGameStatus, currentStatus);
             lastGameStatus = currentStatus;
