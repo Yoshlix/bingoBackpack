@@ -93,9 +93,11 @@ Unique mechanics that don't fit other categories:
 
 ⚠️ **Important:** This mod requires a custom version of Yet Another Bingo!
 
+**Requires Minecraft 26.2 and Java 25.**
+
 1. Download **both** JAR files from the [Releases](../../releases):
    - `bingobackpack-*.jar` - This mod
-   - `bingo-*-all.jar` - Custom Yet Another Bingo version
+   - `bingo-*+mc26.2.jar` - Custom Yet Another Bingo version (2.13.0-custom)
 
 2. Place both JARs in your server's `mods/` folder
 
@@ -117,8 +119,11 @@ cd bingoBackpack
 
 # Output files will be in out/
 # - bingobackpack-*.jar
-# - bingo-*-all.jar
+# - bingo-*+mc26.2.jar
+# - discord-service-*-all.jar
 ```
+
+Requires a JDK that can build for Java 25.
 
 ---
 
@@ -192,4 +197,4 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) for detai
 
 - Built on [Fabric](https://fabricmc.net/)
 - Extends [Yet Another Bingo](https://gitlab.com/horrificdev/bingo) by HorrificDev
-- Developed for Minecraft 1.21.x
+- Developed for Minecraft 26.2 (Yet Another Bingo 2.13.0)

@@ -64,7 +64,8 @@ public class InstantFurnace extends BingoItem {
 
             if (recipeOptional.isPresent()) {
                 var recipe = recipeOptional.get();
-                ItemStack result = recipe.value().assemble(input, level.registryAccess());
+                // MC 26.2: assemble() no longer takes a RegistryAccess
+                ItemStack result = recipe.value().assemble(input);
 
                 if (!result.isEmpty()) {
                     int count = stack.getCount();

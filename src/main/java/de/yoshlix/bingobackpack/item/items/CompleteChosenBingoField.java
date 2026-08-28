@@ -1,9 +1,9 @@
 package de.yoshlix.bingobackpack.item.items;
 
+import de.yoshlix.bingobackpack.bingo.BingoBridge;
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
-import me.jfenn.bingo.api.BingoApi;
-import me.jfenn.bingo.api.data.IBingoObjective;
+import me.jfenn.bingo.api.ext.ICardEntryView;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.HoverEvent;
@@ -48,37 +48,26 @@ public class CompleteChosenBingoField extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
-        var teams = BingoApi.getTeams();
-        if (teams == null) {
+        var teams = BingoBridge.getAllTeams();
+        if (!BingoBridge.isAvailable()) {
             player.sendSystemMessage(Component.literal("§cKein Bingo-Spiel aktiv!"));
             return false;
         }
 
-        var playerTeam = teams.getTeamForPlayer(player.getUUID());
+        var playerTeam = BingoBridge.getTeamForPlayer(player.getUUID());
         if (playerTeam == null) {
             player.sendSystemMessage(Component.literal("§cDu bist in keinem Team!"));
             return false;
         }
 
-        var game = BingoApi.getGameExtended();
-        if (game == null) {
-            player.sendSystemMessage(Component.literal("§cBingo-API nicht verfügbar!"));
-            return false;
-        }
-
-        var card = game.getActiveCard();
+        var card = BingoBridge.getCardForTeam(playerTeam.getId());
         if (card == null) {
             player.sendSystemMessage(Component.literal("§cKeine Bingo-Karte vorhanden!"));
             return false;
         }
 
-        // Get incomplete objectives
-        var incompleteObjectives = new ArrayList<IBingoObjective>();
-        for (var objective : card.getObjectives()) {
-            if (!objective.hasAchieved(playerTeam.getId())) {
-                incompleteObjectives.add(objective);
-            }
-        }
+        var incompleteObjectives = new ArrayList<>(
+                BingoBridge.getIncompleteEntries(card, playerTeam.getId()));
 
         if (incompleteObjectives.isEmpty()) {
             player.sendSystemMessage(Component.literal("§6Alle Felder wurden bereits abgeschlossen!"));
@@ -95,12 +84,12 @@ public class CompleteChosenBingoField extends BingoItem {
 
         int index = 1;
         for (var objective : incompleteObjectives) {
-            String name = objective.getDisplayName() != null ? objective.getDisplayName() : objective.getId();
+            String name = BingoBridge.nameOf(objective);
 
             Component message = Component.literal("  §e[" + index + "] ")
                     .append(Component.literal(name).withStyle(Style.EMPTY
                             .withColor(ChatFormatting.WHITE)
-                            .withClickEvent(new ClickEvent.RunCommand("/backpack perks select " + objective.getId()))
+                            .withClickEvent(new ClickEvent.RunCommand("/backpack perks select " + objective.getObjectiveId()))
                             .withHoverEvent(new HoverEvent.ShowText(
                                     Component.literal("Klicke um dieses Feld abzuschließen")))));
 
@@ -129,7 +118,7 @@ public class CompleteChosenBingoField extends BingoItem {
         }
 
         // Find the objective
-        IBingoObjective selectedObjective = null;
+        ICardEntryView selectedObjective = null;
 
         // Check if it's a number
         try {
@@ -140,7 +129,7 @@ public class CompleteChosenBingoField extends BingoItem {
         } catch (NumberFormatException e) {
             // Not a number, try to find by ID
             for (var obj : pending.objectives) {
-                if (obj.getId().equals(objectiveId)) {
+                if (obj.getObjectiveId().equals(objectiveId)) {
                     selectedObjective = obj;
                     break;
                 }
@@ -152,20 +141,13 @@ public class CompleteChosenBingoField extends BingoItem {
             return false;
         }
 
-        var scoringService = BingoApi.getScoringService();
-        if (scoringService == null) {
-            player.sendSystemMessage(Component.literal("§cBingo-API nicht verfügbar!"));
-            return false;
-        }
-
-        boolean success = scoringService.completeObjective(
-                selectedObjective.getId(),
+        boolean success = BingoBridge.completeObjective(
+                selectedObjective.getObjectiveId(),
                 pending.teamId,
                 player.getUUID());
 
         if (success) {
-            String name = selectedObjective.getDisplayName() != null ? selectedObjective.getDisplayName()
-                    : selectedObjective.getId();
+            String name = BingoBridge.nameOf(selectedObjective);
             player.sendSystemMessage(Component.literal("§a✓ Feld abgeschlossen: §f" + name));
 
             // Consume item from inventory (find and remove the item)
@@ -209,9 +191,9 @@ public class CompleteChosenBingoField extends BingoItem {
 
     private static class PendingSelection {
         final String teamId;
-        final List<IBingoObjective> objectives;
+        final List<ICardEntryView> objectives;
 
-        PendingSelection(String teamId, List<IBingoObjective> objectives) {
+        PendingSelection(String teamId, List<ICardEntryView> objectives) {
             this.teamId = teamId;
             this.objectives = objectives;
         }

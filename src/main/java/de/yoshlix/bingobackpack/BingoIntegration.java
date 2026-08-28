@@ -13,8 +13,7 @@ import net.minecraft.world.scores.Scoreboard;
 import java.util.*;
 
 import de.yoshlix.bingobackpack.item.TemporaryItemStateManager;
-import me.jfenn.bingo.api.BingoApi;
-import me.jfenn.bingo.api.data.BingoGameStatus;
+import me.jfenn.bingo.api.BingoEvents;
 
 /**
  * Integration with Bingo mods that use Minecraft's scoreboard teams.
@@ -27,7 +26,7 @@ public class BingoIntegration {
     private MinecraftServer server;
     private boolean enabled = true;
     private boolean backpackGiven = false;
-    private BingoGameStatus lastGameStatus = null;
+    private boolean eventsRegistered = false;
 
     // Track which players have already received their backpack for their current
     // team
@@ -48,6 +47,81 @@ public class BingoIntegration {
     public void init(MinecraftServer server) {
         this.server = server;
         this.playersWithBackpack.clear();
+        registerBingoEvents();
+    }
+
+    /**
+     * Subscribe to Yet Another Bingo's official events.
+     *
+     * These replace both the old status polling and BingoTeamServiceMixin, which
+     * hooked bingo's internal TeamService by string target. Registration happens
+     * once; the listeners are keyed off the server passed to {@link #init}.
+     */
+    private void registerBingoEvents() {
+        if (eventsRegistered) {
+            return;
+        }
+        eventsRegistered = true;
+
+        BingoEvents.TEAM_CHANGED.register(event -> manualSync());
+
+        BingoEvents.GAME_STARTED.register(event -> {
+            MinecraftServer srv = this.server;
+            if (srv == null) {
+                return;
+            }
+            TemporaryItemStateManager.clearForRoundReset(srv);
+            onRoundStarted(srv);
+        });
+
+        BingoEvents.GAME_ENDED.register(event -> {
+            MinecraftServer srv = this.server;
+            if (srv != null) {
+                TemporaryItemStateManager.clearForRoundReset(srv);
+            }
+            backpackGiven = false;
+            DiscordService.getInstance().onRoundEnd();
+        });
+
+        BingoEvents.GAME_RESET.register(event -> {
+            MinecraftServer srv = this.server;
+            if (srv != null) {
+                TemporaryItemStateManager.clearForRoundReset(srv);
+            }
+            backpackGiven = false;
+            onBingoReset();
+        });
+    }
+
+    /**
+     * Hand out backpacks and starter kits at the start of a round.
+     */
+    private void onRoundStarted(MinecraftServer server) {
+        if (backpackGiven) {
+            return;
+        }
+
+        // Make sure teams are mirrored before handing anything out
+        syncScoreboardTeams();
+
+        for (PlayerTeam scoPlayerTeam : server.getScoreboard().getPlayerTeams()) {
+            for (String name : scoPlayerTeam.getPlayers()) {
+                ServerPlayer player = server.getPlayerList().getPlayerByName(name);
+                if (player != null) {
+                    giveBackpackToPlayer(player, scoPlayerTeam.getName());
+                    StarterKitManager.getInstance().giveStarterKit(player);
+                }
+            }
+        }
+
+        if (ModConfig.getInstance().spawnTeleportEnabled) {
+            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                SpawnManager.getInstance().setSpawn(player);
+            }
+        }
+
+        backpackGiven = true;
+        DiscordService.getInstance().onRoundStart();
     }
 
     public void setEnabled(boolean enabled) {
@@ -59,7 +133,11 @@ public class BingoIntegration {
     }
 
     /**
-     * Called every server tick to check for team changes
+     * Periodic safety net for the scoreboard mirror.
+     *
+     * Round transitions and bingo team changes are handled by events now; this
+     * only catches scoreboard edits made outside of bingo (commands, other mods,
+     * players reconnecting), which no event covers.
      */
     public void tick(MinecraftServer server) {
         if (!enabled || server == null)
@@ -71,58 +149,6 @@ public class BingoIntegration {
         tickCounter = 0;
 
         syncScoreboardTeams();
-
-        var game = BingoApi.getGame();
-        if (game == null || game.getStatus() == null) {
-            return;
-        }
-
-        BingoGameStatus currentStatus = game.getStatus();
-        if (lastGameStatus == null) {
-            lastGameStatus = currentStatus;
-        }
-
-        if (currentStatus != lastGameStatus) {
-            handleGameStatusChange(server, lastGameStatus, currentStatus);
-            lastGameStatus = currentStatus;
-        }
-
-        if (!backpackGiven && currentStatus.equals(BingoGameStatus.PLAYING)) {
-            for (PlayerTeam scoPlayerTeam : server.getScoreboard().getPlayerTeams()) {
-                for (String name : scoPlayerTeam.getPlayers()) {
-                    ServerPlayer player = server.getPlayerList().getPlayerByName(name);
-                    if (player != null) {
-                        giveBackpackToPlayer(player, scoPlayerTeam.getName());
-                        // Give starter kit to player at round start
-                        StarterKitManager.getInstance().giveStarterKit(player);
-                    }
-                }
-            }
-
-            if (ModConfig.getInstance().spawnTeleportEnabled) {
-                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                    SpawnManager.getInstance().setSpawn(player);
-                }
-            }
-
-            backpackGiven = true;
-            // Discord Round Start
-            DiscordService.getInstance().onRoundStart();
-        }
-
-        if (currentStatus.equals(BingoGameStatus.POSTGAME)) {
-            backpackGiven = false;
-        }
-    }
-
-    private void handleGameStatusChange(MinecraftServer server, BingoGameStatus previousStatus, BingoGameStatus currentStatus) {
-        if (currentStatus == BingoGameStatus.PLAYING || previousStatus == BingoGameStatus.PLAYING) {
-            TemporaryItemStateManager.clearForRoundReset(server);
-        }
-
-        if (previousStatus == BingoGameStatus.PLAYING && currentStatus == BingoGameStatus.POSTGAME) {
-            DiscordService.getInstance().onRoundEnd();
-        }
     }
 
     /**

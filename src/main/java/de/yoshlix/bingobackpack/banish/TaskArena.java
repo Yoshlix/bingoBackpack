@@ -5,6 +5,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
@@ -18,12 +19,12 @@ public class TaskArena implements BanishTask {
 
     // Which mob type this arena uses (stored per-generation via origin seed)
     private static final EntityType<?>[] MOB_TYPES = {
-        EntityType.ZOMBIE,
-        EntityType.SKELETON,
-        EntityType.SPIDER,
-        EntityType.HUSK,
-        EntityType.STRAY,
-        EntityType.CAVE_SPIDER,
+        EntityTypes.ZOMBIE,
+        EntityTypes.SKELETON,
+        EntityTypes.SPIDER,
+        EntityTypes.HUSK,
+        EntityTypes.STRAY,
+        EntityTypes.CAVE_SPIDER,
     };
 
     private static final String[] MOB_NAMES = {
@@ -91,7 +92,7 @@ public class TaskArena implements BanishTask {
             int mobIndex = getMobTypeIndex(origin);
             EntityType<?> mobType = MOB_TYPES[mobIndex];
             String mobName = MOB_NAMES[mobIndex];
-            int count = (mobType == EntityType.CAVE_SPIDER) ? 15 : 10;
+            int count = (mobType == EntityTypes.CAVE_SPIDER) ? 15 : 10;
 
             for (int i = 0; i < count; i++) {
                 BlockPos spawnPos = new BlockPos(

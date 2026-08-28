@@ -1,5 +1,6 @@
 package de.yoshlix.bingobackpack.item.items;
 
+import de.yoshlix.bingobackpack.bingo.BingoBridge;
 import de.yoshlix.bingobackpack.BingoBackpack;
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.BingoItemRegistry;
@@ -17,6 +18,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.monster.*;
 import net.minecraft.world.level.Level;
 
@@ -157,10 +159,10 @@ public class MobPheromone extends BingoItem {
     }
 
     private static ServerPlayer findRandomEnemy(ServerPlayer player) {
-        var teams = BingoApi.getTeams();
+        var teams = BingoBridge.getAllTeams();
         if (teams == null) return null;
 
-        var playerTeam = teams.getTeamForPlayer(player.getUUID());
+        var playerTeam = BingoBridge.getTeamForPlayer(player.getUUID());
         if (playerTeam == null) return null;
 
         var server = ((ServerLevel) player.level()).getServer();
@@ -333,33 +335,33 @@ public class MobPheromone extends BingoItem {
         // - SHULKER: Only spawns naturally in End Cities, can cause issues if spawned elsewhere
         if (level.dimension() == Level.NETHER) {
             EntityType<?>[] netherMobs = {
-                    EntityType.ZOMBIFIED_PIGLIN,
-                    EntityType.BLAZE,
-                    EntityType.WITHER_SKELETON,
-                    EntityType.MAGMA_CUBE,
-                    EntityType.PIGLIN,
-                    EntityType.HOGLIN
+                    EntityTypes.ZOMBIFIED_PIGLIN,
+                    EntityTypes.BLAZE,
+                    EntityTypes.WITHER_SKELETON,
+                    EntityTypes.MAGMA_CUBE,
+                    EntityTypes.PIGLIN,
+                    EntityTypes.HOGLIN
             };
             return (EntityType<? extends Monster>) netherMobs[random.nextInt(netherMobs.length)];
         } else if (level.dimension() == Level.END) {
             // Only Enderman in End - Shulker requires End City structure
             EntityType<?>[] endMobs = {
-                    EntityType.ENDERMAN
+                    EntityTypes.ENDERMAN
             };
             return (EntityType<? extends Monster>) endMobs[random.nextInt(endMobs.length)];
         } else {
             // Overworld - varied mobs
             EntityType<?>[] overworldMobs = {
-                    EntityType.ZOMBIE,
-                    EntityType.SKELETON,
-                    EntityType.SPIDER,
-                    EntityType.CREEPER,
-                    EntityType.ENDERMAN,
-                    EntityType.WITCH,
-                    EntityType.CAVE_SPIDER,
-                    EntityType.SLIME,
-                    EntityType.DROWNED,
-                    EntityType.HUSK
+                    EntityTypes.ZOMBIE,
+                    EntityTypes.SKELETON,
+                    EntityTypes.SPIDER,
+                    EntityTypes.CREEPER,
+                    EntityTypes.ENDERMAN,
+                    EntityTypes.WITCH,
+                    EntityTypes.CAVE_SPIDER,
+                    EntityTypes.SLIME,
+                    EntityTypes.DROWNED,
+                    EntityTypes.HUSK
             };
             return (EntityType<? extends Monster>) overworldMobs[random.nextInt(overworldMobs.length)];
         }

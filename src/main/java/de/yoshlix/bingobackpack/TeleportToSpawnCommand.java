@@ -1,5 +1,6 @@
 package de.yoshlix.bingobackpack;
 
+import de.yoshlix.bingobackpack.bingo.BingoBridge;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -18,7 +19,7 @@ public class TeleportToSpawnCommand {
     }
 
     private static int teleportToSpawn(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-        var game = BingoApi.getGame();
+        var game = BingoBridge.game();
         if (game == null || game.getStatus() != BingoGameStatus.PLAYING)
             return 0;
 

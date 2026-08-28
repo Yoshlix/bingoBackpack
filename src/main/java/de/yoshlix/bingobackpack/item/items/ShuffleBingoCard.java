@@ -1,8 +1,8 @@
 package de.yoshlix.bingobackpack.item.items;
 
+import de.yoshlix.bingobackpack.bingo.BingoBridge;
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
-import me.jfenn.bingo.api.BingoApi;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -35,26 +35,21 @@ public class ShuffleBingoCard extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
-        var cardService = BingoApi.getCardService();
-        var game = BingoApi.getGameExtended();
-
-        if (cardService == null || game == null) {
+        if (!BingoBridge.isAvailable()) {
             player.sendSystemMessage(Component.literal("§cBingo-API nicht verfügbar!"));
             return false;
         }
 
-        var oldCard = game.getActiveCard();
+        var oldCard = BingoBridge.getActiveCard();
         if (oldCard == null) {
             player.sendSystemMessage(Component.literal("§cKeine Bingo-Karte vorhanden!"));
             return false;
         }
 
-        // Generate new seed for complete reroll
-        long newSeed = System.currentTimeMillis();
+        // shuffleCard() regenerates the card with a fresh seed internally
+        boolean shuffled = BingoBridge.shuffleCard(oldCard);
 
-        var newCard = cardService.rerollCard(null, newSeed);
-
-        if (newCard != null) {
+        if (shuffled) {
             player.sendSystemMessage(Component.literal("§6§l★★★ BINGO KARTE NEU GEMISCHT! ★★★"));
 
             var server = ((net.minecraft.server.level.ServerLevel) player.level()).getServer();

@@ -2,9 +2,15 @@ package de.yoshlix.bingobackpack.item.items;
 
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
+import net.minecraft.core.Holder;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.clock.ClockTimeMarkers;
+import net.minecraft.world.clock.WorldClock;
+import net.minecraft.world.clock.WorldClocks;
 
 public class TimeWatch extends BingoItem {
 
@@ -34,19 +40,22 @@ public class TimeWatch extends BingoItem {
             return false;
         }
 
-        long time = level.getDayTime() % 24000;
+        // MC 26.2 moved world time behind ClockManager: time is tracked per WorldClock
+        // and set by jumping to a named marker, instead of setDayTime(ticks).
+        Registry<WorldClock> clockRegistry = level.registryAccess().lookupOrThrow(Registries.WORLD_CLOCK);
+        Holder<WorldClock> overworldClock = clockRegistry.getOrThrow(WorldClocks.OVERWORLD);
+
+        long time = level.getOverworldClockTime() % 24000;
         boolean isDay = time < 13000;
 
         if (isDay) {
-            // Switch to Night (13000)
-            level.setDayTime(level.getDayTime() - time + 13000);
+            level.clockManager().moveToTimeMarker(overworldClock, ClockTimeMarkers.NIGHT);
             level.getServer().getPlayerList().broadcastSystemMessage(
                     Component.literal("§b§lDING DONG! §r§6" + player.getName().getString()
                             + " §7hat die Zeit auf §9Nacht §7gestellt."),
                     false);
         } else {
-            // Switch to Day (1000)
-            level.setDayTime(level.getDayTime() - time + 1000 + 24000); // +24000 to advance day count
+            level.clockManager().moveToTimeMarker(overworldClock, ClockTimeMarkers.DAY);
             level.getServer().getPlayerList().broadcastSystemMessage(
                     Component.literal("§e§lRING RING! §r§6" + player.getName().getString()
                             + " §7hat die Zeit auf §eTag §7gestellt."),

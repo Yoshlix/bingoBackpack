@@ -1,5 +1,6 @@
 package de.yoshlix.bingobackpack.item.items;
 
+import de.yoshlix.bingobackpack.bingo.BingoBridge;
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
 import net.minecraft.network.chat.Component;
@@ -195,11 +196,11 @@ public class Paranoia extends BingoItem {
     }
 
     private List<ServerPlayer> getTargetableEnemies(ServerPlayer player) {
-        var teams = me.jfenn.bingo.api.BingoApi.getTeams();
+        var teams = BingoBridge.getAllTeams();
         if (teams == null)
             return Collections.emptyList();
 
-        var playerTeam = teams.getTeamForPlayer(player.getUUID());
+        var playerTeam = BingoBridge.getTeamForPlayer(player.getUUID());
         if (playerTeam == null)
             return Collections.emptyList();
 

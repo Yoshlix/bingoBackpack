@@ -1,5 +1,6 @@
 package de.yoshlix.bingobackpack.item.items;
 
+import de.yoshlix.bingobackpack.bingo.BingoBridge;
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
 import me.jfenn.bingo.api.BingoApi;
@@ -41,13 +42,13 @@ public class KillRandomPlayer extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
-        var teams = BingoApi.getTeams();
-        if (teams == null) {
+        var teams = BingoBridge.getAllTeams();
+        if (!BingoBridge.isAvailable()) {
             player.sendSystemMessage(Component.literal("§cKein Bingo-Spiel aktiv!"));
             return false;
         }
 
-        var playerTeam = teams.getTeamForPlayer(player.getUUID());
+        var playerTeam = BingoBridge.getTeamForPlayer(player.getUUID());
         if (playerTeam == null) {
             player.sendSystemMessage(Component.literal("§cDu bist in keinem Team!"));
             return false;

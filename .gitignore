@@ -35,3 +35,6 @@ out/
 run/**
 bin/**
 .DS_Store
+
+# Fabric mod template used as a 26.2 reference, not part of the build
+/template-mod-template-26.2/

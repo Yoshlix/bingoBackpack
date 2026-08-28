@@ -19,8 +19,8 @@ echo -e "${GREEN}✓ Bingo API modules built successfully${NC}"
 echo ""
 
 # Step 2: Build Bingo Mod
-echo -e "${BLUE}📦 Step 2/6: Building Bingo Mod (MC 1.21.11)...${NC}"
-./gradlew :mc1.21.11:build --quiet
+echo -e "${BLUE}📦 Step 2/6: Building Bingo Mod (MC 26.2)...${NC}"
+./gradlew :mc26.2:build --quiet
 cd ..
 echo -e "${GREEN}✓ Bingo Mod built successfully${NC}"
 echo ""
@@ -44,7 +44,7 @@ echo -e "${BLUE}📦 Step 5/6: Copying to output folder...${NC}"
 mkdir -p out
 cp build/libs/bingobackpack-*.jar out/ 2>/dev/null || true
 # Copy the normal jar (not fat jar - it has fabric dependencies properly declared)
-cp bingo/mc1.21.11/build/libs/bingo-*+mc1.21.11.jar out/ 2>/dev/null || true
+cp bingo/mc26.2/build/libs/bingo-*+mc26.2.jar out/ 2>/dev/null || true
 # Copy the Discord Service fat jar
 cp discord-service/build/libs/discord-service-*-all.jar out/ 2>/dev/null || true
 # Remove sources jars, dev jars from output (but keep -all.jar for discord-service)
@@ -57,7 +57,7 @@ echo ""
 echo -e "${BLUE}📦 Step 6/6: Setting up run/mods for development...${NC}"
 mkdir -p run/mods
 rm -f run/mods/bingo-*.jar 2>/dev/null || true
-cp bingo/mc1.21.11/build/libs/bingo-*+mc1.21.11.jar run/mods/ 2>/dev/null || true
+cp bingo/mc26.2/build/libs/bingo-*+mc26.2.jar run/mods/ 2>/dev/null || true
 rm -f run/mods/*-sources.jar run/mods/*-all.jar 2>/dev/null || true
 echo -e "${GREEN}✓ run/mods ready for development${NC}"
 echo ""

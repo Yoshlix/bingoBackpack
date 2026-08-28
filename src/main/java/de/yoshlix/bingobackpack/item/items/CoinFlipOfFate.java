@@ -1,9 +1,9 @@
 package de.yoshlix.bingobackpack.item.items;
 
+import de.yoshlix.bingobackpack.bingo.BingoBridge;
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
-import me.jfenn.bingo.api.BingoApi;
-import me.jfenn.bingo.api.data.IBingoObjective;
+import me.jfenn.bingo.api.ext.ICardEntryView;
 import me.jfenn.bingo.api.data.IBingoTeam;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -44,23 +44,15 @@ public class CoinFlipOfFate extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
-        var teams = BingoApi.getTeams();
-        if (teams == null) {
+        var teams = BingoBridge.getAllTeams();
+        if (!BingoBridge.isAvailable()) {
             player.sendSystemMessage(Component.literal("§cKein Bingo-Spiel aktiv!"));
             return false;
         }
 
-        var playerTeam = teams.getTeamForPlayer(player.getUUID());
+        var playerTeam = BingoBridge.getTeamForPlayer(player.getUUID());
         if (playerTeam == null) {
             player.sendSystemMessage(Component.literal("§cDu bist in keinem Team!"));
-            return false;
-        }
-
-        var scoringService = BingoApi.getScoringService();
-        var game = BingoApi.getGameExtended();
-
-        if (scoringService == null || game == null) {
-            player.sendSystemMessage(Component.literal("§cBingo-API nicht verfügbar!"));
             return false;
         }
 
@@ -101,15 +93,10 @@ public class CoinFlipOfFate extends BingoItem {
             }
         }
 
-        // Find incomplete objectives for the target team
-        var incompleteObjectives = new ArrayList<IBingoObjective>();
-        var cards = game.getAllCards();
-        for (var card : cards) {
-            for (var objective : card.getObjectives()) {
-                if (!objective.hasAchieved(targetTeam.getId())) {
-                    incompleteObjectives.add(objective);
-                }
-            }
+        // Find incomplete fields for the target team
+        var incompleteObjectives = new ArrayList<ICardEntryView>();
+        for (var card : BingoBridge.getAllCards()) {
+            incompleteObjectives.addAll(BingoBridge.getIncompleteEntries(card, targetTeam.getId()));
         }
 
         if (incompleteObjectives.isEmpty()) {
@@ -119,15 +106,13 @@ public class CoinFlipOfFate extends BingoItem {
 
         // Complete random objective
         var randomObjective = incompleteObjectives.get(random.nextInt(incompleteObjectives.size()));
-        boolean success = scoringService.completeObjective(
-                randomObjective.getId(),
+        boolean success = BingoBridge.completeObjective(
+                randomObjective.getObjectiveId(),
                 targetTeam.getId(),
                 player.getUUID());
 
         if (success) {
-            String objectiveName = randomObjective.getDisplayName() != null
-                    ? randomObjective.getDisplayName()
-                    : randomObjective.getId();
+            String objectiveName = BingoBridge.nameOf(randomObjective);
 
             if (playerWins) {
                 // Player wins!

@@ -141,7 +141,7 @@ public class BingoItemManager {
 
                 // Notify player
                 serverPlayer.sendSystemMessage(
-                        Component.literal("§6Ein §" + item.getRarity().getColor().getChar() +
+                        Component.literal("§6Ein " + item.getRarity().getColorCode() +
                                 item.getName() + " §6ist gedroppt!"));
 
                 // Only one item per kill

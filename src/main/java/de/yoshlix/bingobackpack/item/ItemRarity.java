@@ -31,6 +31,17 @@ public enum ItemRarity {
     }
 
     /**
+     * The legacy formatting code for this rarity, including the section sign
+     * (e.g. "§a").
+     *
+     * MC 26.2 dropped ChatFormatting.getChar(); toString() already yields the
+     * full code, so callers no longer prepend the section sign themselves.
+     */
+    public String getColorCode() {
+        return color.toString();
+    }
+
+    /**
      * Base drop chance when killing mobs (0.0 - 1.0)
      * Values are loaded from ModConfig for easy customization.
      */

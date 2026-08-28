@@ -1,8 +1,9 @@
 package de.yoshlix.bingobackpack.item.items;
 
+import de.yoshlix.bingobackpack.bingo.BingoBridge;
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
-import me.jfenn.bingo.api.BingoApi;
+import me.jfenn.bingo.api.ext.ICardEntryView;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -57,64 +58,45 @@ public class CompleteRandomBingoField extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
-        // Get the player's team
-        var teams = BingoApi.getTeams();
-        if (teams == null) {
+        if (!BingoBridge.isAvailable()) {
             player.sendSystemMessage(Component.literal("§cKein Bingo-Spiel aktiv!"));
             return false;
         }
 
-        var playerTeam = teams.getTeamForPlayer(player.getUUID());
+        var playerTeam = BingoBridge.getTeamForPlayer(player.getUUID());
         if (playerTeam == null) {
             player.sendSystemMessage(Component.literal("§cDu bist in keinem Team!"));
             return false;
         }
 
-        // Get card service for scoring manipulation
-        var scoringService = BingoApi.getScoringService();
-        var game = BingoApi.getGameExtended(); // Use extended game interface
-
-        if (scoringService == null || game == null) {
-            player.sendSystemMessage(Component.literal("§cBingo-API nicht verfügbar!"));
-            return false;
-        }
-
-        // Get all incomplete objectives from the cards
-        var cards = game.getAllCards();
+        var cards = BingoBridge.getAllCards();
         if (cards.isEmpty()) {
             player.sendSystemMessage(Component.literal("§cKeine Bingo-Karten vorhanden!"));
             return false;
         }
 
-        // Find a random incomplete objective for this team
-        var incompleteObjectives = new java.util.ArrayList<me.jfenn.bingo.api.data.IBingoObjective>();
+        // Find all fields this team has not completed yet, across every card
+        var incomplete = new java.util.ArrayList<ICardEntryView>();
         for (var card : cards) {
-            for (var objective : card.getObjectives()) {
-                if (!objective.hasAchieved(playerTeam.getId())) {
-                    incompleteObjectives.add(objective);
-                }
-            }
+            incomplete.addAll(BingoBridge.getIncompleteEntries(card, playerTeam.getId()));
         }
 
-        if (incompleteObjectives.isEmpty()) {
+        if (incomplete.isEmpty()) {
             player.sendSystemMessage(Component.literal("§6Alle Felder wurden bereits abgeschlossen!"));
             return false;
         }
 
-        // Select a random objective and complete it
         var random = new java.util.Random();
-        var randomObjective = incompleteObjectives.get(random.nextInt(incompleteObjectives.size()));
+        var target = incomplete.get(random.nextInt(incomplete.size()));
 
-        boolean success = scoringService.completeObjective(
-                randomObjective.getId(),
+        boolean success = BingoBridge.completeObjective(
+                target.getObjectiveId(),
                 playerTeam.getId(),
                 player.getUUID());
 
         if (success) {
-            String objectiveName = randomObjective.getDisplayName() != null
-                    ? randomObjective.getDisplayName()
-                    : randomObjective.getId();
-            player.sendSystemMessage(Component.literal("§a✓ Feld abgeschlossen: §f" + objectiveName));
+            player.sendSystemMessage(
+                    Component.literal("§a✓ Feld abgeschlossen: §f" + BingoBridge.nameOf(target)));
         } else {
             player.sendSystemMessage(Component.literal("§cFehler beim Abschließen des Feldes!"));
         }

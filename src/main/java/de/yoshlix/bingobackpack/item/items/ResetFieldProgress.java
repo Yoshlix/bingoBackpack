@@ -1,9 +1,9 @@
 package de.yoshlix.bingobackpack.item.items;
 
+import de.yoshlix.bingobackpack.bingo.BingoBridge;
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
-import me.jfenn.bingo.api.BingoApi;
-import me.jfenn.bingo.api.data.IBingoObjective;
+import me.jfenn.bingo.api.ext.ICardEntryView;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.HoverEvent;
@@ -47,41 +47,29 @@ public class ResetFieldProgress extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
-        var teams = BingoApi.getTeams();
-        if (teams == null) {
+        var teams = BingoBridge.getAllTeams();
+        if (!BingoBridge.isAvailable()) {
             player.sendSystemMessage(Component.literal("§cKein Bingo-Spiel aktiv!"));
             return false;
         }
 
-        var playerTeam = teams.getTeamForPlayer(player.getUUID());
+        var playerTeam = BingoBridge.getTeamForPlayer(player.getUUID());
         if (playerTeam == null) {
             player.sendSystemMessage(Component.literal("§cDu bist in keinem Team!"));
             return false;
         }
 
-        var game = BingoApi.getGameExtended();
-        if (game == null) {
-            player.sendSystemMessage(Component.literal("§cBingo-API nicht verfügbar!"));
-            return false;
-        }
-
-        var card = game.getActiveCard();
-        if (card == null) {
-            player.sendSystemMessage(Component.literal("§cKeine Bingo-Karte vorhanden!"));
-            return false;
-        }
-
-        // Find enemy teams and their completed objectives
+        // Find enemy teams and their completed fields. Each team may sit on its own
+        // card, so resolve the card per team instead of using a single active card.
         var enemyCompletions = new ArrayList<EnemyCompletion>();
 
-        for (var team : teams) {
-            if (team.getId().equals(playerTeam.getId()))
-                continue; // Skip own team
-
-            for (var objective : card.getObjectives()) {
-                if (objective.hasAchieved(team.getId())) {
-                    enemyCompletions.add(new EnemyCompletion(team.getId(), objective));
-                }
+        for (var team : BingoBridge.getEnemyTeams(playerTeam.getId())) {
+            var card = BingoBridge.getCardForTeam(team.getId());
+            if (card == null) {
+                continue;
+            }
+            for (var entry : BingoBridge.getCompletedEntries(card, team.getId())) {
+                enemyCompletions.add(new EnemyCompletion(team.getId(), entry));
             }
         }
 
@@ -100,8 +88,7 @@ public class ResetFieldProgress extends BingoItem {
 
         int index = 1;
         for (var completion : enemyCompletions) {
-            String name = completion.objective.getDisplayName() != null ? completion.objective.getDisplayName()
-                    : completion.objective.getId();
+            String name = BingoBridge.nameOf(completion.objective);
 
             Component message = Component.literal("  §e[" + index + "] §c" + completion.teamId + "§7: ")
                     .append(Component.literal(name).withStyle(Style.EMPTY
@@ -143,17 +130,10 @@ public class ResetFieldProgress extends BingoItem {
 
         EnemyCompletion completion = pending.completions.get(index);
 
-        var scoringService = BingoApi.getScoringService();
-        if (scoringService == null) {
-            player.sendSystemMessage(Component.literal("§cBingo-API nicht verfügbar!"));
-            return false;
-        }
+        String name = BingoBridge.nameOf(completion.objective);
 
-        String name = completion.objective.getDisplayName() != null ? completion.objective.getDisplayName()
-                : completion.objective.getId();
-
-        boolean success = scoringService.uncompleteObjective(
-                completion.objective.getId(),
+        boolean success = BingoBridge.uncompleteObjective(
+                completion.objective.getObjectiveId(),
                 completion.teamId);
 
         if (success) {
@@ -207,9 +187,9 @@ public class ResetFieldProgress extends BingoItem {
 
     private static class EnemyCompletion {
         final String teamId;
-        final IBingoObjective objective;
+        final ICardEntryView objective;
 
-        EnemyCompletion(String teamId, IBingoObjective objective) {
+        EnemyCompletion(String teamId, ICardEntryView objective) {
             this.teamId = teamId;
             this.objective = objective;
         }

@@ -526,7 +526,7 @@ public class BackpackCommand {
 
         BingoItemManager.getInstance().giveRandomItem(player, rarity);
         ctx.getSource().sendSuccess(() -> Component.literal(
-                "§aGave random §" + rarity.getColor().getChar() + rarity.getDisplayName() +
+                "§aGave random " + rarity.getColorCode() + rarity.getDisplayName() +
                         " §aitem to §e" + player.getName().getString()),
                 true);
         return 1;
@@ -543,8 +543,8 @@ public class BackpackCommand {
 
         StringBuilder sb = new StringBuilder("§6Bingo Items (" + items.size() + "):\n");
         for (BingoItem item : items) {
-            sb.append("§7- §")
-                    .append(item.getRarity().getColor().getChar())
+            sb.append("§7- ")
+                    .append(item.getRarity().getColorCode())
                     .append(item.getName())
                     .append(" §8(")
                     .append(item.getId())

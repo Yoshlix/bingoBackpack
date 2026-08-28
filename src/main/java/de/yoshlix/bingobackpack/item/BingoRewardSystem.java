@@ -1,10 +1,10 @@
 package de.yoshlix.bingobackpack.item;
 
+import de.yoshlix.bingobackpack.bingo.BingoBridge;
 import de.yoshlix.bingobackpack.BingoBackpack;
 import de.yoshlix.bingobackpack.ModConfig;
-import me.jfenn.bingo.api.BingoApi;
 import me.jfenn.bingo.api.data.BingoGameStatus;
-import me.jfenn.bingo.api.data.IBingoObjective;
+import me.jfenn.bingo.api.ext.ICardEntryView;
 import me.jfenn.bingo.api.data.IBingoTeam;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -69,7 +69,7 @@ public class BingoRewardSystem {
         if (server == null)
             return;
 
-        var game = BingoApi.getGame();
+        var game = BingoBridge.game();
         if (game == null || !game.getStatus().equals(BingoGameStatus.PLAYING)) {
             return;
         }
@@ -110,8 +110,8 @@ public class BingoRewardSystem {
             // Announce to all players
             server.getPlayerList().broadcastSystemMessage(
                     Component.literal("§6✦ §e" + luckyPlayer.getName().getString() +
-                            " §6hat ein zufälliges Geschenk erhalten: §" +
-                            item.getRarity().getColor().getChar() + item.getName() + "§6!"),
+                            " §6hat ein zufälliges Geschenk erhalten: " +
+                            item.getRarity().getColorCode() + item.getName() + "§6!"),
                     false);
 
             BingoBackpack.LOGGER.info("Random gift given to {}: {}",
@@ -123,21 +123,18 @@ public class BingoRewardSystem {
      * Check for bingo row completions and individual task completions.
      */
     private void checkBingoProgress(MinecraftServer server) {
-        var teams = BingoApi.getTeams();
-        var gameExtended = BingoApi.getGameExtended();
-
-        if (teams == null || gameExtended == null)
+        if (!BingoBridge.isAvailable())
             return;
 
-        var card = gameExtended.getActiveCard();
-        if (card == null)
-            return;
-
-        for (var team : teams) {
+        for (var team : BingoBridge.getAllTeams()) {
             String teamId = team.getId();
 
-            // Check for new row completions
-            int currentLines = card.countLines(teamId);
+            var card = BingoBridge.getCardForTeam(teamId);
+            if (card == null)
+                continue;
+
+            // Line count now comes from the team's own score, which upstream tracks
+            int currentLines = team.getScore().getLines();
             int previousLines = teamCompletedLines.getOrDefault(teamId, 0);
 
             if (currentLines > previousLines) {
@@ -150,28 +147,20 @@ public class BingoRewardSystem {
             }
 
             // Check for new objective completions
+            var completedEntries = BingoBridge.getCompletedEntries(card, teamId);
             Set<String> currentCompleted = new HashSet<>();
-            for (var objective : card.getObjectives()) {
-                if (objective.hasAchieved(teamId)) {
-                    currentCompleted.add(objective.getId());
-                }
+            for (var entry : completedEntries) {
+                currentCompleted.add(entry.getObjectiveId());
             }
 
             Set<String> previousCompleted = teamCompletedObjectives.getOrDefault(teamId, new HashSet<>());
             int newCompletions = 0;
 
-            for (String objId : currentCompleted) {
-                if (!previousCompleted.contains(objId)) {
+            for (var entry : completedEntries) {
+                if (!previousCompleted.contains(entry.getObjectiveId())) {
                     // New objective completed!
                     newCompletions++;
-                    var objective = card.getObjectives().stream()
-                            .filter(o -> o.getId().equals(objId))
-                            .findFirst()
-                            .orElse(null);
-
-                    if (objective != null) {
-                        onObjectiveCompleted(server, team, objective);
-                    }
+                    onObjectiveCompleted(server, team, entry);
                 }
             }
 
@@ -215,8 +204,8 @@ public class BingoRewardSystem {
                 if (item != null) {
                     BingoItemManager.getInstance().giveItem(player, item);
                     player.sendSystemMessage(
-                            Component.literal("§a§l★ §aReihe abgeschlossen! §fDu hast §" +
-                                    item.getRarity().getColor().getChar() + item.getName() + " §ferhalten!"));
+                            Component.literal("§a§l★ §aReihe abgeschlossen! §fDu hast " +
+                                    item.getRarity().getColorCode() + item.getName() + " §ferhalten!"));
                 }
             }
         }
@@ -237,8 +226,8 @@ public class BingoRewardSystem {
                 if (item != null) {
                     BingoItemManager.getInstance().giveItem(player, item);
                     player.sendSystemMessage(
-                            Component.literal("§d§l✦ §d" + tasksCompleted + " Aufgaben erledigt! §fDu hast §" +
-                                    item.getRarity().getColor().getChar() + item.getName() + " §ferhalten!"));
+                            Component.literal("§d§l✦ §d" + tasksCompleted + " Aufgaben erledigt! §fDu hast " +
+                                    item.getRarity().getColorCode() + item.getName() + " §ferhalten!"));
                 }
             }
         }
@@ -253,7 +242,7 @@ public class BingoRewardSystem {
      * Called when a player/team completes an individual objective.
      * There's a chance to receive an item based on the task difficulty.
      */
-    private void onObjectiveCompleted(MinecraftServer server, IBingoTeam team, IBingoObjective objective) {
+    private void onObjectiveCompleted(MinecraftServer server, IBingoTeam team, ICardEntryView objective) {
         // Random chance to get an item
         if (random.nextDouble() >= ModConfig.getInstance().taskCompleteItemChance) {
             return;
@@ -289,11 +278,11 @@ public class BingoRewardSystem {
         var item = items.get(random.nextInt(items.size()));
         BingoItemManager.getInstance().giveItem(luckyPlayer, item);
 
-        String objectiveName = objective.getDisplayName() != null ? objective.getDisplayName() : objective.getId();
+        String objectiveName = BingoBridge.nameOf(objective);
 
         luckyPlayer.sendSystemMessage(
-                Component.literal("§6✓ §eBonus für §f" + objectiveName + "§e: §" +
-                        item.getRarity().getColor().getChar() + item.getName()));
+                Component.literal("§6✓ §eBonus für §f" + objectiveName + "§e: " +
+                        item.getRarity().getColorCode() + item.getName()));
     }
 
     /**

@@ -1,7 +1,7 @@
 package de.yoshlix.bingobackpack.item;
 
 import de.yoshlix.bingobackpack.BingoBackpack;
-import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
+import net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -19,7 +19,9 @@ public class BingoItemCreativeTab {
     public static final Identifier TAB_ID = Identifier.parse(BingoBackpack.MOD_ID + ":bingo_items");
 
     public static void register() {
-        CreativeModeTab tab = FabricItemGroup.builder()
+        // Fabric API replaced fabric-item-group-api-v1 with fabric-creative-tab-api-v1;
+        // FabricCreativeModeTab.builder() is the direct successor to FabricItemGroup.builder().
+        CreativeModeTab tab = FabricCreativeModeTab.builder()
                 .icon(() -> new ItemStack(Items.PAPER))
                 .title(Component.literal("§6Bingo Items"))
                 .displayItems((displayContext, entries) -> {

@@ -1,5 +1,6 @@
 package de.yoshlix.bingobackpack;
 
+import de.yoshlix.bingobackpack.bingo.BingoBridge;
 import me.jfenn.bingo.api.BingoApi;
 import me.jfenn.bingo.api.data.BingoGameStatus;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
@@ -29,13 +30,9 @@ public class LobbyRestrictions {
                 return InteractionResult.PASS;
             }
 
-            // Only restrict during PREGAME (lobby)
-            try {
-                if (!BingoApi.getGame().getStatus().equals(BingoGameStatus.PREGAME)) {
-                    return InteractionResult.PASS;
-                }
-            } catch (Exception e) {
-                // Bingo API not available, skip restrictions
+            // Only restrict during PREGAME (lobby).
+            // status() is null while bingo is not loaded, which skips restrictions.
+            if (BingoBridge.status() != BingoGameStatus.PREGAME) {
                 return InteractionResult.PASS;
             }
 

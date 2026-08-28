@@ -1,8 +1,8 @@
 package de.yoshlix.bingobackpack.item.items;
 
+import de.yoshlix.bingobackpack.bingo.BingoBridge;
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
-import me.jfenn.bingo.api.BingoApi;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -38,63 +38,49 @@ public class RerollRandomField extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
-        var cardService = BingoApi.getCardService();
-        var game = BingoApi.getGameExtended();
-        var teams = BingoApi.getTeams();
-
-        if (cardService == null || game == null || teams == null) {
+        if (!BingoBridge.isAvailable()) {
             player.sendSystemMessage(Component.literal("§cBingo-API nicht verfügbar!"));
             return false;
         }
 
-        var playerTeam = teams.getTeamForPlayer(player.getUUID());
+        var playerTeam = BingoBridge.getTeamForPlayer(player.getUUID());
         if (playerTeam == null) {
             player.sendSystemMessage(Component.literal("§cDu bist in keinem Team!"));
             return false;
         }
 
-        var card = game.getActiveCard();
+        var card = BingoBridge.getCardForTeam(playerTeam.getId());
         if (card == null) {
             player.sendSystemMessage(Component.literal("§cKeine Bingo-Karte vorhanden!"));
             return false;
         }
 
-        // Find incomplete objectives (only reroll incomplete ones)
-        var incompletePositions = new java.util.ArrayList<int[]>();
-        for (int y = 0; y < 5; y++) {
-            for (int x = 0; x < 5; x++) {
-                var objective = card.getObjective(x, y);
-                if (objective != null && !objective.hasAchieved(playerTeam.getId())) {
-                    incompletePositions.add(new int[] { x, y });
-                }
-            }
-        }
-
-        if (incompletePositions.isEmpty()) {
+        // Only reroll fields the team has not completed yet
+        var incomplete = BingoBridge.getIncompleteEntries(card, playerTeam.getId());
+        if (incomplete.isEmpty()) {
             player.sendSystemMessage(Component.literal("§6Keine offenen Felder zum Rerolln!"));
             return false;
         }
 
-        // Select random position
-        int[] pos = incompletePositions.get(random.nextInt(incompletePositions.size()));
-        int x = pos[0];
-        int y = pos[1];
+        var target = incomplete.get(random.nextInt(incomplete.size()));
+        int x = target.getX();
+        int y = target.getY();
+        String oldName = BingoBridge.nameOf(target);
 
-        // Get current objective name before reroll
-        var oldObjective = card.getObjective(x, y);
-        String oldName = oldObjective != null && oldObjective.getDisplayName() != null ? oldObjective.getDisplayName()
-                : "Unbekannt";
-
-        // Reroll the tile
-        boolean success = cardService.rerollTile(null, x, y, java.util.Set.of());
+        String newObjectiveId = BingoBridge.rerollEntry(card, x, y);
+        boolean success = newObjectiveId != null;
 
         if (success) {
-            // Get new objective name
-            var newCard = game.getActiveCard();
-            var newObjective = newCard != null ? newCard.getObjective(x, y) : null;
-            String newName = newObjective != null && newObjective.getDisplayName() != null
-                    ? newObjective.getDisplayName()
-                    : "Neues Feld";
+            var newCard = BingoBridge.getCardForTeam(playerTeam.getId());
+            String newName = newObjectiveId;
+            if (newCard != null) {
+                for (var entry : BingoBridge.getEntries(newCard)) {
+                    if (entry.getX() == x && entry.getY() == y) {
+                        newName = BingoBridge.nameOf(entry);
+                        break;
+                    }
+                }
+            }
 
             player.sendSystemMessage(Component.literal("§a✓ Feld geändert: §c" + oldName + " §a→ §e" + newName));
 

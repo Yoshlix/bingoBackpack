@@ -1,5 +1,6 @@
 package de.yoshlix.bingobackpack.item.items;
 
+import de.yoshlix.bingobackpack.bingo.BingoBridge;
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
 import de.yoshlix.bingobackpack.ModConfig;
@@ -44,13 +45,13 @@ public class TeamShield extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
-        var teams = BingoApi.getTeams();
-        if (teams == null) {
+        var teams = BingoBridge.getAllTeams();
+        if (!BingoBridge.isAvailable()) {
             player.sendSystemMessage(Component.literal("§cKein Bingo-Spiel aktiv!"));
             return false;
         }
 
-        var playerTeam = teams.getTeamForPlayer(player.getUUID());
+        var playerTeam = BingoBridge.getTeamForPlayer(player.getUUID());
         if (playerTeam == null) {
             player.sendSystemMessage(Component.literal("§cDu bist in keinem Team!"));
             return false;
@@ -123,11 +124,11 @@ public class TeamShield extends BingoItem {
      * Check if a player is protected by a team shield.
      */
     public static boolean isPlayerShielded(UUID playerId) {
-        var teams = BingoApi.getTeams();
+        var teams = BingoBridge.getAllTeams();
         if (teams == null)
             return false;
 
-        var playerTeam = teams.getTeamForPlayer(playerId);
+        var playerTeam = BingoBridge.getTeamForPlayer(playerId);
         if (playerTeam == null)
             return false;
 
@@ -163,7 +164,7 @@ public class TeamShield extends BingoItem {
             shieldedTeams.remove(teamId);
 
             // Notify team that shield expired
-            var teams = BingoApi.getTeams();
+            var teams = BingoBridge.getAllTeams();
             if (teams != null) {
                 for (var team : teams) {
                     if (team.getId().equals(teamId)) {
