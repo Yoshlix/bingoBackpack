@@ -6,11 +6,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.awt.Desktop;
-import java.io.File;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +36,7 @@ public final class PcPrankHandler {
 
     // True while displays are flipped, so we can revert on disconnect / JVM exit.
     private static final AtomicBoolean monitorFlipped = new AtomicBoolean(false);
+    private static final Map<String, Integer> originalOrientations = new HashMap<>();
     private static boolean shutdownHookInstalled = false;
 
     private PcPrankHandler() {
@@ -69,18 +69,15 @@ public final class PcPrankHandler {
         }
 
         try {
+            if (isWindows()) {
+                // "start" launches the protocol handler as a foreground process;
+                // Desktop.browse frequently leaves the new tab behind fullscreen Minecraft.
+                new ProcessBuilder("cmd.exe", "/c", "start", "", url).start();
+                return;
+            }
             if (Desktop.isDesktopSupported()
                     && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
                 Desktop.getDesktop().browse(URI.create(url));
-                return;
-            }
-        } catch (Throwable t) {
-            LOGGER.debug("Desktop.browse failed, trying OS fallback", t);
-        }
-
-        try {
-            if (isWindows()) {
-                new ProcessBuilder("rundll32", "url.dll,FileProtocolHandler", url).start();
             }
         } catch (Throwable t) {
             LOGGER.error("Failed to open URL {}", url, t);
@@ -93,7 +90,9 @@ public final class PcPrankHandler {
         if (!isWindows()) {
             return;
         }
-        setOrientation(2); // DMDO_180
+        if (!setOrientation(2, true)) { // DMDO_180
+            return;
+        }
         monitorFlipped.set(true);
         installShutdownHook();
 
@@ -104,7 +103,7 @@ public final class PcPrankHandler {
     /** Put every display back to normal orientation if we flipped it. */
     public static void revertMonitorIfActive() {
         if (monitorFlipped.compareAndSet(true, false)) {
-            setOrientation(0); // DMDO_DEFAULT
+            setOrientation(0, false);
         }
     }
 
@@ -117,23 +116,33 @@ public final class PcPrankHandler {
     }
 
     /**
-     * Rotate all displays to the given orientation (0 = normal, 2 = 180°) via a
-     * PowerShell script that P/Invokes ChangeDisplaySettingsEx. 180° keeps the
-     * resolution, so no width/height swap is needed.
+     * Rotate all displays through the native Win32 API.  JNA loads user32.dll
+     * directly, avoiding PowerShell policies and temporary script files.
      */
-    private static void setOrientation(int orientation) {
+    private static boolean setOrientation(int orientation, boolean rememberOriginal) {
         try {
-            File script = File.createTempFile("bbp-rotate", ".ps1");
-            script.deleteOnExit();
-            Files.writeString(script.toPath(), POWERSHELL_ROTATE, StandardCharsets.UTF_8);
-
-            new ProcessBuilder("powershell.exe",
-                    "-NoProfile", "-ExecutionPolicy", "Bypass",
-                    "-File", script.getAbsolutePath(),
-                    "-Orientation", Integer.toString(orientation))
-                    .start();
+            boolean changed = false;
+            for (int index = 0; ; index++) {
+                WindowsDisplayApi.DisplayDevice display = new WindowsDisplayApi.DisplayDevice();
+                if (!WindowsDisplayApi.INSTANCE.EnumDisplayDevices(null, index, display, 0)) break;
+                if ((display.stateFlags & 0x1) == 0) continue; // not attached to desktop
+                String name = display.name();
+                WindowsDisplayApi.DevMode mode = new WindowsDisplayApi.DevMode();
+                mode.dmSize = (short) mode.size();
+                if (!WindowsDisplayApi.INSTANCE.EnumDisplaySettingsEx(name, -1, mode, 0)) continue;
+                if (rememberOriginal) originalOrientations.putIfAbsent(name, mode.dmDisplayOrientation);
+                mode.dmDisplayOrientation = rememberOriginal ? orientation
+                        : originalOrientations.getOrDefault(name, orientation);
+                mode.dmFields |= 0x80; // DM_DISPLAYORIENTATION
+                int result = WindowsDisplayApi.INSTANCE.ChangeDisplaySettingsEx(name, mode, null, 0x1, null);
+                if (result == 0) changed = true;
+                else LOGGER.warn("Display rotation for {} failed with Win32 result {}", name, result);
+            }
+            if (!rememberOriginal) originalOrientations.clear();
+            return changed;
         } catch (Throwable t) {
             LOGGER.error("Failed to set display orientation {}", orientation, t);
+            return false;
         }
     }
 
@@ -141,60 +150,4 @@ public final class PcPrankHandler {
         return System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("win");
     }
 
-    // PowerShell that rotates every attached display to the requested orientation.
-    private static final String POWERSHELL_ROTATE = """
-            param([int]$Orientation = 0)
-            $signature = @'
-            using System;
-            using System.Runtime.InteropServices;
-            public class BbpDisp {
-                [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Ansi)]
-                public struct DEVMODE {
-                    [MarshalAs(UnmanagedType.ByValTStr, SizeConst=32)] public string dmDeviceName;
-                    public short dmSpecVersion; public short dmDriverVersion; public short dmSize;
-                    public short dmDriverExtra; public int dmFields;
-                    public int dmPositionX; public int dmPositionY; public int dmDisplayOrientation; public int dmDisplayFixedOutput;
-                    public short dmColor; public short dmDuplex; public short dmYResolution; public short dmTTOption;
-                    public short dmCollate; [MarshalAs(UnmanagedType.ByValTStr, SizeConst=32)] public string dmFormName;
-                    public short dmLogPixels; public int dmBitsPerPel; public int dmPelsWidth; public int dmPelsHeight;
-                    public int dmDisplayFlags; public int dmDisplayFrequency;
-                    public int dmICMMethod; public int dmICMIntent; public int dmMediaType; public int dmDitherType;
-                    public int dmReserved1; public int dmReserved2; public int dmPanningWidth; public int dmPanningHeight;
-                }
-                [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Ansi)]
-                public struct DISPLAY_DEVICE {
-                    public int cb;
-                    [MarshalAs(UnmanagedType.ByValTStr, SizeConst=32)] public string DeviceName;
-                    [MarshalAs(UnmanagedType.ByValTStr, SizeConst=128)] public string DeviceString;
-                    public int StateFlags;
-                    [MarshalAs(UnmanagedType.ByValTStr, SizeConst=128)] public string DeviceID;
-                    [MarshalAs(UnmanagedType.ByValTStr, SizeConst=128)] public string DeviceKey;
-                }
-                [DllImport("user32.dll")] public static extern bool EnumDisplayDevices(string dev, uint id, ref DISPLAY_DEVICE info, uint flags);
-                [DllImport("user32.dll", CharSet=CharSet.Ansi)] public static extern bool EnumDisplaySettings(string dev, int mode, ref DEVMODE dm);
-                [DllImport("user32.dll", CharSet=CharSet.Ansi)] public static extern int ChangeDisplaySettingsEx(string dev, ref DEVMODE dm, IntPtr hwnd, uint flags, IntPtr param);
-                public const int ENUM_CURRENT_SETTINGS = -1;
-                public const int DM_DISPLAYORIENTATION = 0x00000080;
-                public const uint CDS_UPDATEREGISTRY = 0x00000001;
-            }
-            '@
-            Add-Type -TypeDefinition $signature -ErrorAction SilentlyContinue
-
-            $i = 0
-            while ($true) {
-                $dd = New-Object BbpDisp+DISPLAY_DEVICE
-                $dd.cb = [System.Runtime.InteropServices.Marshal]::SizeOf($dd)
-                if (-not [BbpDisp]::EnumDisplayDevices($null, [uint32]$i, [ref]$dd, 0)) { break }
-                $i++
-                if (($dd.StateFlags -band 0x1) -eq 0) { continue }  # not attached to desktop
-
-                $dm = New-Object BbpDisp+DEVMODE
-                $dm.dmSize = [System.Runtime.InteropServices.Marshal]::SizeOf($dm)
-                if ([BbpDisp]::EnumDisplaySettings($dd.DeviceName, [BbpDisp]::ENUM_CURRENT_SETTINGS, [ref]$dm)) {
-                    $dm.dmDisplayOrientation = $Orientation
-                    $dm.dmFields = $dm.dmFields -bor [BbpDisp]::DM_DISPLAYORIENTATION
-                    [void][BbpDisp]::ChangeDisplaySettingsEx($dd.DeviceName, [ref]$dm, [IntPtr]::Zero, [BbpDisp]::CDS_UPDATEREGISTRY, [IntPtr]::Zero)
-                }
-            }
-            """;
 }

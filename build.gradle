@@ -48,6 +48,10 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	// Direct Win32 access for display rotation; bundled into the mod JAR.
+	implementation "net.java.dev.jna:jna:5.17.0"
+	include "net.java.dev.jna:jna:5.17.0"
 	
 	// Kotlin stdlib for Bingo API
 	implementation "org.jetbrains.kotlin:kotlin-stdlib:2.3.21"
