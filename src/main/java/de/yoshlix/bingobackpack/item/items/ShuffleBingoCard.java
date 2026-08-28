@@ -87,7 +87,7 @@ public class ShuffleBingoCard extends BingoItem {
 
     @Override
     public boolean canDropFromMob() {
-        return false; // Too powerful - only from special events
+        return true; // Too powerful - only from special events
     }
 
     @Override

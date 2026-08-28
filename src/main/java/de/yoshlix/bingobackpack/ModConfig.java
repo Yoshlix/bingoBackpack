@@ -74,12 +74,13 @@ public class ModConfig {
     public int milestoneInterval = 5;
     public double taskCompleteItemChance = 0.15;
 
-    // Drop Chances per Rarity (0.0 - 1.0)
-    public double dropChanceCommon = 0.05;
-    public double dropChanceUncommon = 0.025;
-    public double dropChanceRare = 0.01;
-    public double dropChanceEpic = 0.003;
-    public double dropChanceLegendary = 0.001;
+    // Drop chance per *item* of that rarity, per kill (0.0 - 1.0).
+    // Pool sizes are 5/9/7/12/8, so these add up to ~26.5% for any drop.
+    public double dropChanceCommon = 0.02;
+    public double dropChanceUncommon = 0.01;
+    public double dropChanceRare = 0.005;
+    public double dropChanceEpic = 0.0025;
+    public double dropChanceLegendary = 0.0006;
 
     // Lobby Restrictions
     public boolean lobbyDisableFishingRod = true;

@@ -67,7 +67,7 @@ public class InstantStructure extends BingoItem {
 
     @Override
     public ItemRarity getRarity() {
-        return ItemRarity.RARE;
+        return ItemRarity.UNCOMMON;
     }
 
     @Override

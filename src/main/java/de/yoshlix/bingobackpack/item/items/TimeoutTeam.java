@@ -36,7 +36,7 @@ public class TimeoutTeam extends BingoItem {
 
     @Override
     public ItemRarity getRarity() {
-        return ItemRarity.EPIC;
+        return ItemRarity.LEGENDARY;
     }
 
     @Override
@@ -136,6 +136,6 @@ public class TimeoutTeam extends BingoItem {
 
     @Override
     public boolean canDropFromMob() {
-        return false; // Too powerful
+        return true; // Too powerful
     }
 }

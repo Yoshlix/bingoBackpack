@@ -34,7 +34,7 @@ public class NetherTeleport extends BingoItem {
 
     @Override
     public ItemRarity getRarity() {
-        return ItemRarity.EPIC;
+        return ItemRarity.UNCOMMON;
     }
 
     @Override

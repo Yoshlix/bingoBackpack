@@ -99,6 +99,6 @@ public class KillEnemyTeam extends BingoItem {
 
     @Override
     public boolean canDropFromMob() {
-        return false; // Too powerful
+        return true; // Too powerful
     }
 }

@@ -31,7 +31,7 @@ public class TimeWatch extends BingoItem {
 
     @Override
     public ItemRarity getRarity() {
-        return ItemRarity.RARE;
+        return ItemRarity.COMMON;
     }
 
     @Override

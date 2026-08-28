@@ -16,8 +16,8 @@ import java.util.*;
  * Manages the reward system for Bingo Items.
  * 
  * Rewards are given in the following situations:
- * 1. When a player completes a bingo row -> All team members get a random item
- * (up to RARE)
+ * 1. When a player completes a bingo row -> All team members get a weighted
+ * random item, with the best LEGENDARY odds of any reward path (15%)
  * 2. Every 30 seconds -> Small chance for a random player to receive any item
  * 3. When a player completes a single task -> Chance for item based on task
  * difficulty
@@ -191,7 +191,7 @@ public class BingoRewardSystem {
 
     /**
      * Called when a team completes a bingo row.
-     * All team members receive a random item (up to RARE rarity).
+     * All team members receive a weighted random item.
      */
     private void onRowCompleted(MinecraftServer server, IBingoTeam team) {
         BingoBackpack.LOGGER.info("Team {} completed a row!", team.getId());
@@ -199,8 +199,7 @@ public class BingoRewardSystem {
         for (UUID playerId : team.getPlayers()) {
             ServerPlayer player = server.getPlayerList().getPlayer(playerId);
             if (player != null) {
-                // Give random item up to RARE rarity
-                var item = getRandomItemUpToRarity(ItemRarity.RARE);
+                var item = getRowCompletionReward();
                 if (item != null) {
                     BingoItemManager.getInstance().giveItem(player, item);
                     player.sendSystemMessage(
@@ -316,24 +315,35 @@ public class BingoRewardSystem {
     }
 
     /**
-     * Get a random item up to the specified rarity (inclusive).
+     * Reward for completing a bingo row.
+     *
+     * Completing a row is the main achievement in a round, so this carries the
+     * highest LEGENDARY chance of any reward path (15%, against 5% for
+     * milestones and random gifts). Drawing uniformly from a combined pool
+     * would ignore rarity entirely — with pools of 5/9/7/12/8 a COMMON would be
+     * exactly as likely as a LEGENDARY — so the tier is rolled first.
      */
-    private BingoItem getRandomItemUpToRarity(ItemRarity maxRarity) {
-        List<BingoItem> eligibleItems = new ArrayList<>();
+    private BingoItem getRowCompletionReward() {
+        double roll = random.nextDouble();
+        ItemRarity rarity;
 
-        for (ItemRarity rarity : ItemRarity.values()) {
-            if (rarity.ordinal() <= maxRarity.ordinal()) {
-                eligibleItems.addAll(BingoItemRegistry.getItemsByRarity(rarity));
-            }
+        if (roll < 0.15) {
+            rarity = ItemRarity.COMMON;
+        } else if (roll < 0.40) {
+            rarity = ItemRarity.UNCOMMON;
+        } else if (roll < 0.70) {
+            rarity = ItemRarity.RARE;
+        } else if (roll < 0.85) {
+            rarity = ItemRarity.EPIC;
+        } else {
+            rarity = ItemRarity.LEGENDARY;
         }
 
-        if (eligibleItems.isEmpty()) {
+        var items = BingoItemRegistry.getItemsByRarity(rarity);
+        if (items.isEmpty()) {
             return BingoItemRegistry.getRandomDroppableItem(random).orElse(null);
         }
-
-        // Weight towards higher rarities within the range
-        // Simple approach: just pick randomly
-        return eligibleItems.get(random.nextInt(eligibleItems.size()));
+        return items.get(random.nextInt(items.size()));
     }
 
     /**

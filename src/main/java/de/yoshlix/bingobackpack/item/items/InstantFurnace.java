@@ -38,7 +38,7 @@ public class InstantFurnace extends BingoItem {
 
     @Override
     public ItemRarity getRarity() {
-        return ItemRarity.UNCOMMON;
+        return ItemRarity.COMMON;
     }
 
     @Override

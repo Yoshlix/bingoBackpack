@@ -35,7 +35,7 @@ public class StructureFinder extends BingoItem {
 
     @Override
     public ItemRarity getRarity() {
-        return ItemRarity.EPIC;
+        return ItemRarity.COMMON;
     }
 
     @Override

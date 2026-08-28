@@ -38,7 +38,7 @@ public class BiomeTeleportRandom extends BingoItem {
 
     @Override
     public ItemRarity getRarity() {
-        return ItemRarity.RARE;
+        return ItemRarity.UNCOMMON;
     }
 
     @Override

@@ -38,7 +38,7 @@ public class Flight15Min extends BingoItem {
 
     @Override
     public ItemRarity getRarity() {
-        return ItemRarity.LEGENDARY;
+        return ItemRarity.EPIC;
     }
 
     @Override

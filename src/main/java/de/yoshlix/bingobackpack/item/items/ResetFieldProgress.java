@@ -172,7 +172,7 @@ public class ResetFieldProgress extends BingoItem {
 
     @Override
     public boolean canDropFromMob() {
-        return false; // Too powerful
+        return true; // Too powerful
     }
 
     private static class EnemyCompletion {

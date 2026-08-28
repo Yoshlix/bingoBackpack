@@ -174,7 +174,7 @@ public class CompleteChosenBingoField extends BingoItem {
 
     @Override
     public boolean canDropFromMob() {
-        return false; // Too powerful for mob drops
+        return true; // Too powerful for mob drops
     }
 
     private static class PendingSelection {
