@@ -92,6 +92,10 @@ public class FakeShutdownScreen extends Screen {
                 w / 2, h / 2 + 22, 0xFFFFFFFF);
         graphics.centeredText(this.font,
                 Component.literal("§7" + feedback), w / 2, h - 24, 0xFFDDDDDD);
+
+        // Screen renders registered widgets (EditBox and Button) in its base
+        // implementation. This must run after the blue background.
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
     @Override

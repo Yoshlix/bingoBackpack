@@ -136,9 +136,9 @@ public final class PcPrankHandler {
                 mode.dmFields |= 0x80; // DM_DISPLAYORIENTATION
                 int result = WindowsDisplayApi.INSTANCE.ChangeDisplaySettingsEx(name, mode, null, 0x1, null);
                 if (result == 0) changed = true;
-                else LOGGER.warn("Display rotation for {} failed with Win32 result {}", name, result);
+                else LOGGER.warn("Display rotation for {} failed with Win32 result {} (0=success, -2=mode unsupported)", name, result);
             }
-            if (!rememberOriginal) originalOrientations.clear();
+            if (!rememberOriginal && changed) originalOrientations.clear();
             return changed;
         } catch (Throwable t) {
             LOGGER.error("Failed to set display orientation {}", orientation, t);
