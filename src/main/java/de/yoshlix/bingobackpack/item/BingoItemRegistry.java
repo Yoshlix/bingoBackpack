@@ -94,6 +94,12 @@ public class BingoItemRegistry {
         register(new Paranoia());
         register(new InstantStructure());
 
+        // Newer chaos items
+        register(new WeakHeartsItem());
+        register(new FakeShutdownItem());
+        register(new IndeedItem());
+        register(new MonitorFlipItem());
+
         // Legacy Example
 
         // ========================================

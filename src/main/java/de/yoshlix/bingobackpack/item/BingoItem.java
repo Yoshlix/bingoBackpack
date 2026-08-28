@@ -40,6 +40,63 @@ public abstract class BingoItem {
     protected static final Random RANDOM = new Random();
 
     /**
+     * All online enemy players that are not protected by a Team Shield.
+     *
+     * Shared by the targeted PvP items so the enemy-selection loop (skip own
+     * team, skip shielded teams and players, online and alive only) lives in one
+     * place.
+     */
+    protected static java.util.List<ServerPlayer> onlineEnemies(ServerPlayer player,
+            IBingoTeam playerTeam) {
+        var server = ((net.minecraft.server.level.ServerLevel) player.level()).getServer();
+        var enemies = new java.util.ArrayList<ServerPlayer>();
+        for (IBingoTeam team : BingoBridge.getEnemyTeams(playerTeam.getId())) {
+            if (de.yoshlix.bingobackpack.item.items.TeamShield.isTeamShielded(team.getId())) {
+                continue;
+            }
+            for (java.util.UUID memberId : team.getPlayers()) {
+                ServerPlayer enemy = server.getPlayerList().getPlayer(memberId);
+                if (enemy != null && enemy.isAlive()
+                        && !de.yoshlix.bingobackpack.item.items.TeamShield.isPlayerShielded(memberId)) {
+                    enemies.add(enemy);
+                }
+            }
+        }
+        return enemies;
+    }
+
+    /**
+     * Shared plumbing for the PC-prank items: honour the config toggle, pick a
+     * random reachable enemy, and send the packet. The caller supplies its own
+     * flavour messages around the returned target.
+     *
+     * @return the target the prank was sent to, or null if it could not fire
+     *         (a reason was already reported to the player)
+     */
+    protected static ServerPlayer firePcPrank(ServerPlayer player, String action, String arg,
+            int durationSeconds) {
+        if (!de.yoshlix.bingobackpack.ModConfig.getInstance().pcPranksEnabled) {
+            player.sendSystemMessage(
+                    Component.literal("§cPC-Effekte sind auf diesem Server deaktiviert."));
+            return null;
+        }
+        IBingoTeam team = requireTeam(player);
+        if (team == null) {
+            return null;
+        }
+        var enemies = onlineEnemies(player, team);
+        enemies.removeIf(e -> !de.yoshlix.bingobackpack.net.PcPranks.canReach(e));
+        if (enemies.isEmpty()) {
+            player.sendSystemMessage(
+                    Component.literal("§6Kein erreichbarer Gegner mit installiertem Client-Mod!"));
+            return null;
+        }
+        ServerPlayer target = enemies.get(RANDOM.nextInt(enemies.size()));
+        de.yoshlix.bingobackpack.net.PcPranks.send(target, action, arg, durationSeconds);
+        return target;
+    }
+
+    /**
      * Resolve the player's bingo team, sending the standard failure message if
      * bingo is not running or the player is not on a team.
      *

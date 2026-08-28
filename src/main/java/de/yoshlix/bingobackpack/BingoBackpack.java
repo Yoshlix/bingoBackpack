@@ -36,6 +36,9 @@ public class BingoBackpack implements ModInitializer {
 		BingoItemRegistry.init();
 		BingoItemCreativeTab.register();
 
+		// Register the PC-prank networking payload (runs on both sides)
+		de.yoshlix.bingobackpack.net.PcPranks.register();
+
 		// Apply config to BingoItemManager
 		BingoItemManager.getInstance().setDropsEnabled(ModConfig.getInstance().bingoItemsEnabled);
 		BingoItemManager.getInstance().setGlobalDropChanceMultiplier(ModConfig.getInstance().bingoItemsDropMultiplier);
@@ -87,6 +90,9 @@ public class BingoBackpack implements ModInitializer {
 
 			// Team Shield expiry check
 			TeamShield.tickShieldExpiry(server);
+
+			// Weak Hearts expiry
+			de.yoshlix.bingobackpack.item.items.WeakHeartsItem.tickExpiry(server);
 
 			// Mob Pheromone spawning
 			MobPheromone.tickPheromoneEffects(server);

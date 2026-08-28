@@ -75,16 +75,27 @@ public class ModConfig {
     public double taskCompleteItemChance = 0.15;
 
     // Drop chance per *item* of that rarity, per kill (0.0 - 1.0).
-    // Pool sizes are 5/9/7/12/8, so these add up to ~26.5% for any drop.
-    public double dropChanceCommon = 0.02;
-    public double dropChanceUncommon = 0.01;
-    public double dropChanceRare = 0.005;
-    public double dropChanceEpic = 0.0025;
+    // Pool sizes are 5/9/7/16/8, so these add up to ~26% for any drop.
+    public double dropChanceCommon = 0.0193;
+    public double dropChanceUncommon = 0.0096;
+    public double dropChanceRare = 0.0048;
+    public double dropChanceEpic = 0.0024;
     public double dropChanceLegendary = 0.0006;
 
     // Lobby Restrictions
     public boolean lobbyDisableFishingRod = true;
     public boolean lobbyDisableLevitationPotions = true;
+
+    // PC prank items (fake shutdown screen, open browser, flip monitor).
+    // These reach out of the game to the target player's actual machine, so they
+    // are opt-in and off by default. Only affects players who have the mod
+    // installed client-side; the in-game "3 hearts" debuff is not gated by this.
+    public boolean pcPranksEnabled = false;
+    public int monitorFlipDurationSeconds = 120;
+
+    // Weak Heart item: cap the target's hearts for a while (in-game, always on)
+    public int weakHeartsCount = 3;
+    public int weakHeartsDurationSeconds = 120;
 
     // Discord Integration
     public boolean discordEnabled = false;

@@ -87,6 +87,14 @@ Unique mechanics that don't fit other categories:
 - **Lockdown** (LEGENDARY) - Prevents all players from using `/spawn` for 5 minutes
 - **Wildcard** (EPIC) - Can be used as any other bingo item (one-time transformation)
 
+### 💻 Real-Life Chaos (client-side)
+Items that reach the target's actual computer. These need the mod installed **client-side** and are **off by default** — enable `pcPranksEnabled` in the config. The heart item is in-game and always available.
+
+- **Glasherz / Weak Hearts** (EPIC) - Caps a random enemy's health at 3 hearts for 2 minutes (in-game, no client mod needed)
+- **Blauer Bildschirm des Schicksals / Fake Shutdown** (EPIC) - Shows a dismissible fake "shutting down" overlay on a random enemy's screen
+- **Bewerbungshilfe / Indeed** (EPIC) - Opens indeed.com in a random enemy's browser
+- **Kopfstand / Monitor Flip** (EPIC) - Rotates a random enemy's displays 180° for 2 minutes, then reverts (**Windows only**)
+
 ---
 
 ## 📦 Installation

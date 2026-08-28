@@ -2,6 +2,7 @@ package de.yoshlix.bingobackpack.item;
 
 import de.yoshlix.bingobackpack.banish.BanishManager;
 import de.yoshlix.bingobackpack.item.items.BiomeTeleportChoice;
+import de.yoshlix.bingobackpack.item.items.WeakHeartsItem;
 import de.yoshlix.bingobackpack.item.items.CompleteChosenBingoField;
 import de.yoshlix.bingobackpack.item.items.Flight15Min;
 import de.yoshlix.bingobackpack.item.items.Flight1Min;
@@ -28,6 +29,7 @@ public class TemporaryItemStateManager {
 
     public static void clearForRoundReset(MinecraftServer server) {
         clearGlobalState();
+        WeakHeartsItem.clearAll(server);
 
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             clearPlayerState(player);

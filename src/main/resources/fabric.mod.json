@@ -16,6 +16,9 @@
 	"entrypoints": {
 		"main": [
 			"de.yoshlix.bingobackpack.BingoBackpack"
+		],
+		"client": [
+			"de.yoshlix.bingobackpack.client.BingoBackpackClient"
 		]
 	},
 	"mixins": [

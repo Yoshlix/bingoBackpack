@@ -26,9 +26,14 @@ repositories {
 }
 
 loom {
+	// The PC-prank items need client-side code (custom Screen, OS calls), so the
+	// mod now has a split client source set in addition to the server-side main.
+	splitEnvironmentSourceSets()
+
 	mods {
 		"bingobackpack" {
 			sourceSet sourceSets.main
+			sourceSet sourceSets.client
 		}
 	}
 }
