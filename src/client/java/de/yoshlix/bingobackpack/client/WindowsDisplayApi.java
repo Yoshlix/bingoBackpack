@@ -17,15 +17,15 @@ interface WindowsDisplayApi extends StdCallLibrary {
     int ChangeDisplaySettingsEx(String deviceName, DevMode devMode, Pointer hwnd, int flags, Pointer lParam);
 
     class DisplayDevice extends Structure {
-        public int cb;
+        // DISPLAY_DEVICEW is always 840 bytes (32 + 128 + 128 + 128 UTF-16 chars).
+        // Do not call size() in the constructor: Structure's superclass runs
+        // before Java initializes these fixed-size array fields.
+        public int cb = 840;
         public char[] deviceName = new char[32];
         public char[] deviceString = new char[128];
         public int stateFlags;
         public char[] deviceId = new char[128];
         public char[] deviceKey = new char[128];
-        public DisplayDevice() {
-            cb = size();
-        }
         @Override protected List<String> getFieldOrder() { return List.of("cb", "deviceName", "deviceString", "stateFlags", "deviceId", "deviceKey"); }
         String name() { return Native.toString(deviceName); }
     }
