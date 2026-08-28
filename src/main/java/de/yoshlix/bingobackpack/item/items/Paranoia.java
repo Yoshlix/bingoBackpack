@@ -57,8 +57,7 @@ public class Paranoia extends BingoItem {
         }
 
         // Pick random target
-        Random random = new Random();
-        ServerPlayer target = targets.get(random.nextInt(targets.size()));
+        ServerPlayer target = targets.get(RANDOM.nextInt(targets.size()));
 
         // Check if already active
         if (isActive(target.getUUID())) {
@@ -91,7 +90,6 @@ public class Paranoia extends BingoItem {
 
         long currentTime = System.currentTimeMillis();
         var expiredPlayers = new ArrayList<UUID>();
-        Random random = new Random();
 
         for (var entry : activeParanoias.entrySet()) {
             UUID playerId = entry.getKey();
@@ -108,12 +106,12 @@ public class Paranoia extends BingoItem {
             if (nextSound == null || currentTime >= nextSound) {
                 ServerPlayer player = server.getPlayerList().getPlayer(playerId);
                 if (player != null) {
-                    playRandomCreepySound(player, random);
+                    playRandomCreepySound(player);
                 }
 
                 // Schedule next sound
                 long delay = (SOUND_INTERVAL_TICKS_MIN
-                        + random.nextInt(SOUND_INTERVAL_TICKS_MAX - SOUND_INTERVAL_TICKS_MIN)) * 50L;
+                        + RANDOM.nextInt(SOUND_INTERVAL_TICKS_MAX - SOUND_INTERVAL_TICKS_MIN)) * 50L;
                 nextSoundTimes.put(playerId, currentTime + delay);
             }
         }
@@ -125,7 +123,7 @@ public class Paranoia extends BingoItem {
         }
     }
 
-    private static void playRandomCreepySound(ServerPlayer player, Random random) {
+    private static void playRandomCreepySound(ServerPlayer player) {
         if (player == null || player.connection == null) {
             return;
         }
@@ -153,21 +151,21 @@ public class Paranoia extends BingoItem {
             return;
         }
 
-        net.minecraft.sounds.SoundEvent soundEvent = sounds.get(random.nextInt(sounds.size()));
+        net.minecraft.sounds.SoundEvent soundEvent = sounds.get(RANDOM.nextInt(sounds.size()));
 
         // Validate sound event is not null
         if (soundEvent == null) {
             return;
         }
 
-        float volume = 0.5f + random.nextFloat() * 0.5f;
-        float pitch = 0.8f + random.nextFloat() * 0.4f;
+        float volume = 0.5f + RANDOM.nextFloat() * 0.5f;
+        float pitch = 0.8f + RANDOM.nextFloat() * 0.4f;
 
         // Play sound ONLY to that player (creating a packet)
         // We use player's position but randomize it slightly to sound directional
-        double dx = (random.nextDouble() - 0.5) * 6.0;
-        double dy = (random.nextDouble() - 0.5) * 2.0;
-        double dz = (random.nextDouble() - 0.5) * 6.0;
+        double dx = (RANDOM.nextDouble() - 0.5) * 6.0;
+        double dy = (RANDOM.nextDouble() - 0.5) * 2.0;
+        double dz = (RANDOM.nextDouble() - 0.5) * 6.0;
 
         try {
             player.connection.send(new ClientboundSoundPacket(
@@ -178,7 +176,7 @@ public class Paranoia extends BingoItem {
                     player.getZ() + dz,
                     volume,
                     pitch,
-                    random.nextLong()));
+                    RANDOM.nextLong()));
         } catch (Exception e) {
             // Silently fail if sound cannot be played (e.g., player disconnected)
             // Log only in debug mode to avoid spam

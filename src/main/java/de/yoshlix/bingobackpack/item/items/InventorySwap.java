@@ -11,15 +11,12 @@ import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.UUID;
 
 /**
  * Swaps the entire inventory with a random enemy player.
  */
 public class InventorySwap extends BingoItem {
-
-    private final Random random = new Random();
 
     @Override
     public String getId() {
@@ -43,17 +40,12 @@ public class InventorySwap extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
-        var teams = BingoBridge.getAllTeams();
-        if (!BingoBridge.isAvailable()) {
-            player.sendSystemMessage(Component.literal("§cKein Bingo-Spiel aktiv!"));
+        var playerTeam = requireTeam(player);
+        if (playerTeam == null) {
             return false;
         }
 
-        var playerTeam = BingoBridge.getTeamForPlayer(player.getUUID());
-        if (playerTeam == null) {
-            player.sendSystemMessage(Component.literal("§cDu bist in keinem Team!"));
-            return false;
-        }
+        var teams = BingoBridge.getAllTeams();
 
         // Find all online enemy players (excluding shielded ones)
         var server = ((net.minecraft.server.level.ServerLevel) player.level()).getServer();
@@ -82,7 +74,7 @@ public class InventorySwap extends BingoItem {
         }
 
         // Select random enemy
-        ServerPlayer target = enemyPlayers.get(random.nextInt(enemyPlayers.size()));
+        ServerPlayer target = enemyPlayers.get(RANDOM.nextInt(enemyPlayers.size()));
 
         // Store inventories
         List<ItemStack> playerInventory = new ArrayList<>();

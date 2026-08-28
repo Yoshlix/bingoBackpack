@@ -111,6 +111,12 @@ public class BiomeTeleportChoice extends BingoItem {
     }
 
     public static boolean processBiomeSelection(ServerPlayer player, String selection) {
+        // Make sure the item is still there before the effect runs; it may have
+        // been moved to the team backpack while the selection was pending.
+        if (!requireItemOrWarn(player, "biome_teleport_choice")) {
+            return false;
+        }
+
         List<Holder<Biome>> biomes = pendingBiomeSelections.remove(player.getUUID());
         if (biomes == null) {
             player.sendSystemMessage(Component.literal("§cKeine ausstehende Biom-Auswahl!"));
@@ -163,19 +169,8 @@ public class BiomeTeleportChoice extends BingoItem {
 
         player.sendSystemMessage(Component.literal("§a§lWOOSH! §rDu bist jetzt in: §e" + formatBiomeName(biomeName)));
 
-        consumeItem(player);
+        consumeOrWarn(player, "biome_teleport_choice");
         return true;
-    }
-
-    private static void consumeItem(ServerPlayer player) {
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            var stack = player.getInventory().getItem(i);
-            var itemOpt = de.yoshlix.bingobackpack.item.BingoItemRegistry.fromItemStack(stack);
-            if (itemOpt.isPresent() && itemOpt.get().getId().equals("biome_teleport_choice")) {
-                stack.shrink(1);
-                return;
-            }
-        }
     }
 
     public static boolean hasPendingSelection(UUID playerId) {

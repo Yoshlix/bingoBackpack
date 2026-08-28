@@ -12,15 +12,12 @@ import net.minecraft.sounds.SoundSource;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 /**
  * Münzwurf des Schicksals - 50/50 chance to complete a random field
  * for your team OR for an enemy team!
  */
 public class CoinFlipOfFate extends BingoItem {
-
-    private final Random random = new Random();
 
     @Override
     public String getId() {
@@ -44,17 +41,12 @@ public class CoinFlipOfFate extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
-        var teams = BingoBridge.getAllTeams();
-        if (!BingoBridge.isAvailable()) {
-            player.sendSystemMessage(Component.literal("§cKein Bingo-Spiel aktiv!"));
+        var playerTeam = requireTeam(player);
+        if (playerTeam == null) {
             return false;
         }
 
-        var playerTeam = BingoBridge.getTeamForPlayer(player.getUUID());
-        if (playerTeam == null) {
-            player.sendSystemMessage(Component.literal("§cDu bist in keinem Team!"));
-            return false;
-        }
+        var teams = BingoBridge.getAllTeams();
 
         var server = ((net.minecraft.server.level.ServerLevel) player.level()).getServer();
 
@@ -70,7 +62,7 @@ public class CoinFlipOfFate extends BingoItem {
         }
 
         // 50/50 coin flip
-        boolean playerWins = random.nextBoolean();
+        boolean playerWins = RANDOM.nextBoolean();
 
         // Determine which team gets the completion
         IBingoTeam targetTeam;
@@ -89,7 +81,7 @@ public class CoinFlipOfFate extends BingoItem {
                 targetTeam = playerTeam;
                 playerWins = true;
             } else {
-                targetTeam = enemyTeams.get(random.nextInt(enemyTeams.size()));
+                targetTeam = enemyTeams.get(RANDOM.nextInt(enemyTeams.size()));
             }
         }
 
@@ -105,7 +97,7 @@ public class CoinFlipOfFate extends BingoItem {
         }
 
         // Complete random objective
-        var randomObjective = incompleteObjectives.get(random.nextInt(incompleteObjectives.size()));
+        var randomObjective = incompleteObjectives.get(RANDOM.nextInt(incompleteObjectives.size()));
         boolean success = BingoBridge.completeObjective(
                 randomObjective.getObjectiveId(),
                 targetTeam.getId(),

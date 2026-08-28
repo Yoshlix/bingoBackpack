@@ -23,7 +23,7 @@ import java.util.*;
  */
 public class TimeoutPlayer extends BingoItem {
 
-    private static final Map<UUID, List<ServerPlayer>> pendingTimeouts = new HashMap<>();
+    private static final Map<UUID, List<UUID>> pendingTimeouts = new HashMap<>();
     private static final Map<UUID, Long> timedOutPlayers = new HashMap<>();
 
     @Override
@@ -49,15 +49,8 @@ public class TimeoutPlayer extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
-        var teams = BingoBridge.getAllTeams();
-        if (!BingoBridge.isAvailable()) {
-            player.sendSystemMessage(Component.literal("§cKein Bingo-Spiel aktiv!"));
-            return false;
-        }
-
-        var playerTeam = BingoBridge.getTeamForPlayer(player.getUUID());
+        var playerTeam = requireTeam(player);
         if (playerTeam == null) {
-            player.sendSystemMessage(Component.literal("§cDu bist in keinem Team!"));
             return false;
         }
 
@@ -65,10 +58,7 @@ public class TimeoutPlayer extends BingoItem {
         var server = ((net.minecraft.server.level.ServerLevel) player.level()).getServer();
         var enemyPlayers = new ArrayList<ServerPlayer>();
 
-        for (var team : teams) {
-            if (team.getId().equals(playerTeam.getId()))
-                continue;
-
+        for (var team : BingoBridge.getEnemyTeams(playerTeam.getId())) {
             // Skip if the entire team is shielded
             if (TeamShield.isTeamShielded(team.getId())) {
                 continue;
@@ -88,7 +78,8 @@ public class TimeoutPlayer extends BingoItem {
             return false;
         }
 
-        pendingTimeouts.put(player.getUUID(), enemyPlayers);
+        pendingTimeouts.put(player.getUUID(),
+                enemyPlayers.stream().map(ServerPlayer::getUUID).toList());
 
         // Show selection menu
         player.sendSystemMessage(Component.literal(""));
@@ -116,7 +107,7 @@ public class TimeoutPlayer extends BingoItem {
     }
 
     public static boolean processTimeout(ServerPlayer player, String selection) {
-        List<ServerPlayer> enemies = pendingTimeouts.remove(player.getUUID());
+        List<UUID> enemies = pendingTimeouts.remove(player.getUUID());
         if (enemies == null) {
             player.sendSystemMessage(Component.literal("§cKeine ausstehende Auswahl!"));
             return false;
@@ -135,10 +126,26 @@ public class TimeoutPlayer extends BingoItem {
             return false;
         }
 
-        ServerPlayer target = enemies.get(index);
+        // Resolve now: the stored entity would be stale after a reconnect, and
+        // the menu is only a snapshot of who was reachable then.
+        var server = ((net.minecraft.server.level.ServerLevel) player.level()).getServer();
+        ServerPlayer target = server.getPlayerList().getPlayer(enemies.get(index));
 
         if (target == null || target.isRemoved()) {
             player.sendSystemMessage(Component.literal("§cSpieler nicht mehr verfügbar!"));
+            return false;
+        }
+
+        // Re-check the shield: it may have been raised while the menu was open.
+        if (TeamShield.isPlayerShielded(target.getUUID())) {
+            player.sendSystemMessage(Component.literal(
+                    "§cDieser Spieler ist inzwischen durch ein §bTeam-Schild §cgeschützt!"));
+            return false;
+        }
+
+        // Consume before the effect: the item may have been moved to the team
+        // backpack or handed off while the selection was pending.
+        if (!consumeOrWarn(player, "timeout_player")) {
             return false;
         }
 
@@ -158,7 +165,6 @@ public class TimeoutPlayer extends BingoItem {
                         " §cwurde von §e" + player.getName().getString() + " §ceingefroren!"),
                 false);
 
-        consumeItem(player);
         return true;
     }
 
@@ -218,17 +224,6 @@ public class TimeoutPlayer extends BingoItem {
             }
             return false;
         });
-    }
-
-    private static void consumeItem(ServerPlayer player) {
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            var stack = player.getInventory().getItem(i);
-            var itemOpt = de.yoshlix.bingobackpack.item.BingoItemRegistry.fromItemStack(stack);
-            if (itemOpt.isPresent() && itemOpt.get().getId().equals("timeout_player")) {
-                stack.shrink(1);
-                return;
-            }
-        }
     }
 
     public static boolean hasPendingTimeout(UUID playerId) {

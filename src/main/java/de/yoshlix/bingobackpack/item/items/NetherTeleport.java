@@ -11,14 +11,11 @@ import net.minecraft.world.level.Level;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 
 /**
  * Teleports the player to the Nether dimension.
  */
 public class NetherTeleport extends BingoItem {
-
-    private final Random random = new Random();
 
     @Override
     public String getId() {
@@ -66,8 +63,8 @@ public class NetherTeleport extends BingoItem {
         if (safePos.isEmpty()) {
             // Try a few random positions nearby
             for (int i = 0; i < 10; i++) {
-                int offsetX = netherX + random.nextInt(32) - 16;
-                int offsetZ = netherZ + random.nextInt(32) - 16;
+                int offsetX = netherX + RANDOM.nextInt(32) - 16;
+                int offsetZ = netherZ + RANDOM.nextInt(32) - 16;
                 safePos = TeleportSafety.findSafeSurface(nether, offsetX, offsetZ);
                 if (safePos.isPresent()) {
                     netherX = offsetX;

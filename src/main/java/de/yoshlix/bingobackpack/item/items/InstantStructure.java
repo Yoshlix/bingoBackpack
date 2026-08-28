@@ -17,7 +17,6 @@ import net.minecraft.world.level.levelgen.structure.Structure;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 
 /**
  * Instant Structure - Spawnt eine zufällige Vanilla-Struktur an deiner
@@ -26,7 +25,6 @@ import java.util.Random;
  */
 public class InstantStructure extends BingoItem {
 
-    private final Random random = new Random();
     private static final List<String> OVERWORLD_STRUCTURES = List.of(
             "minecraft:desert_pyramid",
             "minecraft:jungle_pyramid",
@@ -103,7 +101,7 @@ public class InstantStructure extends BingoItem {
             boolean placed = false;
 
             for (int i = 0; i < Math.min(8, candidates.size()); i++) {
-                structureId = candidates.remove(random.nextInt(candidates.size()));
+                structureId = candidates.remove(RANDOM.nextInt(candidates.size()));
                 if (!isRegisteredStructure(level, structureId)) {
                     continue;
                 }

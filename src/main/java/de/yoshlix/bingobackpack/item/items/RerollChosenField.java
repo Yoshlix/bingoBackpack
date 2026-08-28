@@ -46,15 +46,8 @@ public class RerollChosenField extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
-        var teams = BingoBridge.getAllTeams();
-        if (!BingoBridge.isAvailable()) {
-            player.sendSystemMessage(Component.literal("§cKein Bingo-Spiel aktiv!"));
-            return false;
-        }
-
-        var playerTeam = BingoBridge.getTeamForPlayer(player.getUUID());
+        var playerTeam = requireTeam(player);
         if (playerTeam == null) {
-            player.sendSystemMessage(Component.literal("§cDu bist in keinem Team!"));
             return false;
         }
 
@@ -105,6 +98,12 @@ public class RerollChosenField extends BingoItem {
     }
 
     public static boolean processReroll(ServerPlayer player, String selection) {
+        // Make sure the item is still there before the effect runs; it may have
+        // been moved to the team backpack while the selection was pending.
+        if (!requireItemOrWarn(player, "reroll_chosen_field")) {
+            return false;
+        }
+
         PendingReroll pending = pendingRerolls.remove(player.getUUID());
         if (pending == null) {
             player.sendSystemMessage(Component.literal("§cKeine ausstehende Reroll-Auswahl!"));
@@ -157,22 +156,11 @@ public class RerollChosenField extends BingoItem {
                                     " §6hat ein Feld rerolled: §c" + oldName + " §6→ §e" + newName),
                             false);
 
-            consumeItem(player);
+            consumeOrWarn(player, "reroll_chosen_field");
             return true;
         } else {
             player.sendSystemMessage(Component.literal("§cFehler beim Rerolln!"));
             return false;
-        }
-    }
-
-    private static void consumeItem(ServerPlayer player) {
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            var stack = player.getInventory().getItem(i);
-            var itemOpt = de.yoshlix.bingobackpack.item.BingoItemRegistry.fromItemStack(stack);
-            if (itemOpt.isPresent() && itemOpt.get().getId().equals("reroll_chosen_field")) {
-                stack.shrink(1);
-                return;
-            }
         }
     }
 

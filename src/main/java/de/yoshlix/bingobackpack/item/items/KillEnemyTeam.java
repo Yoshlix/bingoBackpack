@@ -39,17 +39,12 @@ public class KillEnemyTeam extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
-        var teams = BingoBridge.getAllTeams();
-        if (!BingoBridge.isAvailable()) {
-            player.sendSystemMessage(Component.literal("§cKein Bingo-Spiel aktiv!"));
+        var playerTeam = requireTeam(player);
+        if (playerTeam == null) {
             return false;
         }
 
-        var playerTeam = BingoBridge.getTeamForPlayer(player.getUUID());
-        if (playerTeam == null) {
-            player.sendSystemMessage(Component.literal("§cDu bist in keinem Team!"));
-            return false;
-        }
+        var teams = BingoBridge.getAllTeams();
 
         // Find enemy teams (excluding shielded ones)
         var enemyTeams = new java.util.ArrayList<me.jfenn.bingo.api.data.IBingoTeam>();
@@ -65,8 +60,7 @@ public class KillEnemyTeam extends BingoItem {
         }
 
         // Select random enemy team
-        var random = new java.util.Random();
-        var targetTeam = enemyTeams.get(random.nextInt(enemyTeams.size()));
+        var targetTeam = enemyTeams.get(RANDOM.nextInt(enemyTeams.size()));
 
         int killCount = 0;
         var server = ((net.minecraft.server.level.ServerLevel) player.level()).getServer();

@@ -45,17 +45,12 @@ public class TeamShield extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
-        var teams = BingoBridge.getAllTeams();
-        if (!BingoBridge.isAvailable()) {
-            player.sendSystemMessage(Component.literal("§cKein Bingo-Spiel aktiv!"));
+        var playerTeam = requireTeam(player);
+        if (playerTeam == null) {
             return false;
         }
 
-        var playerTeam = BingoBridge.getTeamForPlayer(player.getUUID());
-        if (playerTeam == null) {
-            player.sendSystemMessage(Component.literal("§cDu bist in keinem Team!"));
-            return false;
-        }
+        var teams = BingoBridge.getAllTeams();
 
         String teamId = playerTeam.getId();
 

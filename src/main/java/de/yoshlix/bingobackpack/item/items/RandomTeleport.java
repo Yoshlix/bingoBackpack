@@ -11,14 +11,11 @@ import net.minecraft.server.level.ServerPlayer;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 
 /**
  * Teleports the player to a random location in the world.
  */
 public class RandomTeleport extends BingoItem {
-
-    private final Random random = new Random();
 
     @Override
     public String getId() {
@@ -45,8 +42,8 @@ public class RandomTeleport extends BingoItem {
         ServerLevel level = (ServerLevel) player.level();
 
         // Calculate random offset
-        double angle = random.nextDouble() * 2 * Math.PI;
-        int distance = ModConfig.getInstance().randomTeleportMinDistance + random.nextInt(
+        double angle = RANDOM.nextDouble() * 2 * Math.PI;
+        int distance = ModConfig.getInstance().randomTeleportMinDistance + RANDOM.nextInt(
                 ModConfig.getInstance().randomTeleportMaxDistance - ModConfig.getInstance().randomTeleportMinDistance);
 
         int newX = (int) (player.getX() + Math.cos(angle) * distance);
@@ -57,9 +54,9 @@ public class RandomTeleport extends BingoItem {
         if (safePos.isEmpty()) {
             // Try a few more times with different positions
             for (int i = 0; i < 10; i++) {
-                angle = random.nextDouble() * 2 * Math.PI;
+                angle = RANDOM.nextDouble() * 2 * Math.PI;
                 distance = ModConfig.getInstance().randomTeleportMinDistance
-                        + random.nextInt(ModConfig.getInstance().randomTeleportMaxDistance
+                        + RANDOM.nextInt(ModConfig.getInstance().randomTeleportMaxDistance
                                 - ModConfig.getInstance().randomTeleportMinDistance);
                 newX = (int) (player.getX() + Math.cos(angle) * distance);
                 newZ = (int) (player.getZ() + Math.sin(angle) * distance);

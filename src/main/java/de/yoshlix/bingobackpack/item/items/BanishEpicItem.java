@@ -11,7 +11,6 @@ import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 public class BanishEpicItem extends BingoItem {
     @Override
@@ -53,7 +52,7 @@ public class BanishEpicItem extends BingoItem {
             return false;
         }
         
-        ServerPlayer target = enemies.get(new Random().nextInt(enemies.size()));
+        ServerPlayer target = enemies.get(RANDOM.nextInt(enemies.size()));
         BanishManager.getInstance().banish(target);
         
         player.level().getServer().getPlayerList().broadcastSystemMessage(Component.literal("§d§l" + target.getName().getString() + " §evon §a" + player.getName().getString() + " §everbannt!"), false);

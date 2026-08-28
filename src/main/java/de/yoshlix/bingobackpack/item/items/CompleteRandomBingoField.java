@@ -58,14 +58,8 @@ public class CompleteRandomBingoField extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
-        if (!BingoBridge.isAvailable()) {
-            player.sendSystemMessage(Component.literal("§cKein Bingo-Spiel aktiv!"));
-            return false;
-        }
-
-        var playerTeam = BingoBridge.getTeamForPlayer(player.getUUID());
+        var playerTeam = requireTeam(player);
         if (playerTeam == null) {
-            player.sendSystemMessage(Component.literal("§cDu bist in keinem Team!"));
             return false;
         }
 
@@ -86,8 +80,7 @@ public class CompleteRandomBingoField extends BingoItem {
             return false;
         }
 
-        var random = new java.util.Random();
-        var target = incomplete.get(random.nextInt(incomplete.size()));
+        var target = incomplete.get(RANDOM.nextInt(incomplete.size()));
 
         boolean success = BingoBridge.completeObjective(
                 target.getObjectiveId(),

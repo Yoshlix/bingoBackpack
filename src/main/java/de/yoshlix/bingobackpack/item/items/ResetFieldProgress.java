@@ -47,17 +47,12 @@ public class ResetFieldProgress extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
-        var teams = BingoBridge.getAllTeams();
-        if (!BingoBridge.isAvailable()) {
-            player.sendSystemMessage(Component.literal("§cKein Bingo-Spiel aktiv!"));
+        var playerTeam = requireTeam(player);
+        if (playerTeam == null) {
             return false;
         }
 
-        var playerTeam = BingoBridge.getTeamForPlayer(player.getUUID());
-        if (playerTeam == null) {
-            player.sendSystemMessage(Component.literal("§cDu bist in keinem Team!"));
-            return false;
-        }
+        var teams = BingoBridge.getAllTeams();
 
         // Find enemy teams and their completed fields. Each team may sit on its own
         // card, so resolve the card per team instead of using a single active card.
@@ -109,6 +104,12 @@ public class ResetFieldProgress extends BingoItem {
     }
 
     public static boolean processReset(ServerPlayer player, String selection) {
+        // Make sure the item is still there before the effect runs; it may have
+        // been moved to the team backpack while the selection was pending.
+        if (!requireItemOrWarn(player, "reset_field_progress")) {
+            return false;
+        }
+
         PendingReset pending = pendingResets.remove(player.getUUID());
         if (pending == null) {
             player.sendSystemMessage(Component.literal("§cKeine ausstehende Reset-Auswahl!"));
@@ -147,22 +148,11 @@ public class ResetFieldProgress extends BingoItem {
                                     + ") zurückgesetzt!"),
                             false);
 
-            consumeItem(player);
+            consumeOrWarn(player, "reset_field_progress");
             return true;
         } else {
             player.sendSystemMessage(Component.literal("§cFehler beim Zurücksetzen!"));
             return false;
-        }
-    }
-
-    private static void consumeItem(ServerPlayer player) {
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            var stack = player.getInventory().getItem(i);
-            var itemOpt = de.yoshlix.bingobackpack.item.BingoItemRegistry.fromItemStack(stack);
-            if (itemOpt.isPresent() && itemOpt.get().getId().equals("reset_field_progress")) {
-                stack.shrink(1);
-                return;
-            }
         }
     }
 

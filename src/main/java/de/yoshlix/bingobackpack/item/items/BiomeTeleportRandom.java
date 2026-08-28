@@ -15,14 +15,11 @@ import net.minecraft.world.level.biome.Biome;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 
 /**
  * Teleports the player to a random biome.
  */
 public class BiomeTeleportRandom extends BingoItem {
-
-    private final Random random = new Random();
 
     @Override
     public String getId() {
@@ -58,7 +55,7 @@ public class BiomeTeleportRandom extends BingoItem {
         }
 
         // Select random biome
-        final Holder<Biome> initialTargetBiome = biomes.get(random.nextInt(biomes.size()));
+        final Holder<Biome> initialTargetBiome = biomes.get(RANDOM.nextInt(biomes.size()));
         Holder<Biome> targetBiome = initialTargetBiome;
         String biomeName = targetBiome.unwrapKey().orElseThrow().identifier().getPath();
 

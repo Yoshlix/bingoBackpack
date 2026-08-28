@@ -96,6 +96,12 @@ public class MobPheromone extends BingoItem {
      * @return True if successful (and item should be consumed)
      */
     public static boolean activatePheromones(ServerPlayer user, boolean targetSelf) {
+        // Make sure the item is still there before the effect runs; it may have
+        // been moved to the team backpack while the selection was pending.
+        if (!requireItemOrWarn(user, "mob_pheromone")) {
+            return false;
+        }
+
         ServerPlayer targetPlayer = user;
         boolean isSabotage = false;
 
@@ -154,7 +160,7 @@ public class MobPheromone extends BingoItem {
         }
 
         // Consume item
-        consumeItem(user);
+        consumeOrWarn(user, "mob_pheromone");
         return true;
     }
 
@@ -187,7 +193,7 @@ public class MobPheromone extends BingoItem {
         }
 
         if (enemies.isEmpty()) return null;
-        return enemies.get(new Random().nextInt(enemies.size()));
+        return enemies.get(RANDOM.nextInt(enemies.size()));
     }
 
     private static void broadcastToOthers(ServerPlayer target, ServerPlayer source, String message) {
@@ -197,17 +203,6 @@ public class MobPheromone extends BingoItem {
         for (var p : server.getPlayerList().getPlayers()) {
             if (p != target && p != source) {
                 p.sendSystemMessage(Component.literal(message));
-            }
-        }
-    }
-
-    private static void consumeItem(ServerPlayer player) {
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            var stack = player.getInventory().getItem(i);
-            var itemOpt = BingoItemRegistry.fromItemStack(stack);
-            if (itemOpt.isPresent() && itemOpt.get().getId().equals("mob_pheromone")) {
-                stack.shrink(1);
-                return;
             }
         }
     }
@@ -258,16 +253,14 @@ public class MobPheromone extends BingoItem {
             return;
         }
 
-        Random random = new Random();
-
         // Spawn 1-3 mobs per interval
-        int mobCount = 1 + random.nextInt(3);
+        int mobCount = 1 + RANDOM.nextInt(3);
 
         for (int i = 0; i < mobCount; i++) {
             try {
                 // Random position in radius
-                int dx = random.nextInt(SPAWN_RADIUS * 2) - SPAWN_RADIUS;
-                int dz = random.nextInt(SPAWN_RADIUS * 2) - SPAWN_RADIUS;
+                int dx = RANDOM.nextInt(SPAWN_RADIUS * 2) - SPAWN_RADIUS;
+                int dz = RANDOM.nextInt(SPAWN_RADIUS * 2) - SPAWN_RADIUS;
 
                 // Must be at least 8 blocks away
                 if (Math.abs(dx) < 8 && Math.abs(dz) < 8) {
@@ -283,7 +276,7 @@ public class MobPheromone extends BingoItem {
                 }
 
                 // Choose mob type based on dimension and randomness
-                EntityType<? extends Monster> mobType = chooseMobType(level, random);
+                EntityType<? extends Monster> mobType = chooseMobType(level);
                 if (mobType == null) {
                     continue;
                 }
@@ -328,7 +321,7 @@ public class MobPheromone extends BingoItem {
     }
 
     @SuppressWarnings("unchecked")
-    private static EntityType<? extends Monster> chooseMobType(ServerLevel level, Random random) {
+    private static EntityType<? extends Monster> chooseMobType(ServerLevel level) {
         // Dimension-specific mob pools
         // Removed problematic mobs:
         // - GHAST: Requires large spawn space and special conditions, can crash if spawned incorrectly
@@ -342,13 +335,13 @@ public class MobPheromone extends BingoItem {
                     EntityTypes.PIGLIN,
                     EntityTypes.HOGLIN
             };
-            return (EntityType<? extends Monster>) netherMobs[random.nextInt(netherMobs.length)];
+            return (EntityType<? extends Monster>) netherMobs[RANDOM.nextInt(netherMobs.length)];
         } else if (level.dimension() == Level.END) {
             // Only Enderman in End - Shulker requires End City structure
             EntityType<?>[] endMobs = {
                     EntityTypes.ENDERMAN
             };
-            return (EntityType<? extends Monster>) endMobs[random.nextInt(endMobs.length)];
+            return (EntityType<? extends Monster>) endMobs[RANDOM.nextInt(endMobs.length)];
         } else {
             // Overworld - varied mobs
             EntityType<?>[] overworldMobs = {
@@ -363,7 +356,7 @@ public class MobPheromone extends BingoItem {
                     EntityTypes.DROWNED,
                     EntityTypes.HUSK
             };
-            return (EntityType<? extends Monster>) overworldMobs[random.nextInt(overworldMobs.length)];
+            return (EntityType<? extends Monster>) overworldMobs[RANDOM.nextInt(overworldMobs.length)];
         }
     }
 

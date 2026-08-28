@@ -20,7 +20,7 @@ import java.util.*;
  */
 public class Lockdown extends BingoItem {
 
-    private static final Map<UUID, List<ServerPlayer>> pendingLockdowns = new HashMap<>();
+    private static final Map<UUID, List<UUID>> pendingLockdowns = new HashMap<>();
     private static final Map<UUID, Long> lockedPlayers = new HashMap<>();
 
     @Override
@@ -46,15 +46,8 @@ public class Lockdown extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
-        var teams = BingoBridge.getAllTeams();
-        if (!BingoBridge.isAvailable()) {
-            player.sendSystemMessage(Component.literal("§cKein Bingo-Spiel aktiv!"));
-            return false;
-        }
-
-        var playerTeam = BingoBridge.getTeamForPlayer(player.getUUID());
+        var playerTeam = requireTeam(player);
         if (playerTeam == null) {
-            player.sendSystemMessage(Component.literal("§cDu bist in keinem Team!"));
             return false;
         }
 
@@ -62,10 +55,7 @@ public class Lockdown extends BingoItem {
         var server = ((net.minecraft.server.level.ServerLevel) player.level()).getServer();
         var enemyPlayers = new ArrayList<ServerPlayer>();
 
-        for (var team : teams) {
-            if (team.getId().equals(playerTeam.getId()))
-                continue;
-
+        for (var team : BingoBridge.getEnemyTeams(playerTeam.getId())) {
             // Skip shielded teams
             if (TeamShield.isTeamShielded(team.getId())) {
                 continue;
@@ -85,7 +75,8 @@ public class Lockdown extends BingoItem {
             return false;
         }
 
-        pendingLockdowns.put(player.getUUID(), enemyPlayers);
+        pendingLockdowns.put(player.getUUID(),
+                enemyPlayers.stream().map(ServerPlayer::getUUID).toList());
 
         // Show selection menu
         player.sendSystemMessage(Component.literal(""));
@@ -124,7 +115,7 @@ public class Lockdown extends BingoItem {
      * Process lockdown selection by index.
      */
     public static boolean processLockdown(ServerPlayer user, String selection) {
-        List<ServerPlayer> validTargets = pendingLockdowns.get(user.getUUID());
+        List<UUID> validTargets = pendingLockdowns.get(user.getUUID());
         if (validTargets == null) {
             user.sendSystemMessage(Component.literal("§cKeine ausstehende Lockdown-Auswahl!"));
             return false;
@@ -137,7 +128,28 @@ public class Lockdown extends BingoItem {
                 return false;
             }
 
-            ServerPlayer target = validTargets.get(index);
+            // Resolve now: the stored entity would be stale after a reconnect,
+            // and the menu is only a snapshot of who was reachable then.
+            var server = ((net.minecraft.server.level.ServerLevel) user.level()).getServer();
+            ServerPlayer target = server.getPlayerList().getPlayer(validTargets.get(index));
+
+            if (target == null || target.isRemoved()) {
+                user.sendSystemMessage(Component.literal("§cSpieler nicht mehr verfügbar!"));
+                return false;
+            }
+
+            // Re-check the shield: it may have been raised while the menu was open.
+            if (TeamShield.isPlayerShielded(target.getUUID())) {
+                user.sendSystemMessage(Component.literal(
+                        "§cDieser Spieler ist inzwischen durch ein §bTeam-Schild §cgeschützt!"));
+                return false;
+            }
+
+            // Consume before the effect: the item may have been moved to the team
+            // backpack or handed off while the selection was pending.
+            if (!consumeOrWarn(user, "lockdown")) {
+                return false;
+            }
 
             // Apply lockdown
             applyLockdown(target);
@@ -151,9 +163,6 @@ public class Lockdown extends BingoItem {
             target.sendSystemMessage(Component.literal("§7Du kannst 2 Minuten keine Bingo-Items benutzen!"));
             target.sendSystemMessage(Component.literal(""));
 
-            // Consume the Lockdown item
-            consumeItem(user);
-
             // Clean up
             pendingLockdowns.remove(user.getUUID());
             return true;
@@ -164,62 +173,10 @@ public class Lockdown extends BingoItem {
         }
     }
 
-    /**
-     * Called when a player is selected for lockdown (by UUID - legacy).
-     */
-    public static boolean selectTarget(ServerPlayer user, UUID targetId) {
-        List<ServerPlayer> validTargets = pendingLockdowns.get(user.getUUID());
-        if (validTargets == null) {
-            user.sendSystemMessage(Component.literal("§cKeine ausstehende Lockdown-Auswahl!"));
-            return false;
-        }
-
-        ServerPlayer target = null;
-        for (ServerPlayer p : validTargets) {
-            if (p.getUUID().equals(targetId)) {
-                target = p;
-                break;
-            }
-        }
-
-        if (target == null) {
-            user.sendSystemMessage(Component.literal("§cUngültiges Ziel!"));
-            return false;
-        }
-
-        // Apply lockdown
-        applyLockdown(target);
-
-        // Notify both players
-        user.sendSystemMessage(Component.literal("§4§l🔒 LOCKDOWN! §r§c" + target.getName().getString()
-                + " §rkann 2 Minuten keine Items benutzen!"));
-
-        target.sendSystemMessage(Component.literal(""));
-        target.sendSystemMessage(Component.literal("§4§l🔒 LOCKDOWN! §r§cDein Backpack wurde gesperrt!"));
-        target.sendSystemMessage(Component.literal("§7Du kannst 2 Minuten keine Bingo-Items benutzen!"));
-        target.sendSystemMessage(Component.literal(""));
-
-        // Clean up
-        pendingLockdowns.remove(user.getUUID());
-
-        return true;
-    }
-
     private static void applyLockdown(ServerPlayer player) {
         long endTime = System.currentTimeMillis() + (ModConfig.getInstance().lockdownDurationSeconds * 1000L);
         lockedPlayers.put(player.getUUID(), endTime);
         player.closeContainer();
-    }
-
-    private static void consumeItem(ServerPlayer player) {
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            var stack = player.getInventory().getItem(i);
-            var itemOpt = de.yoshlix.bingobackpack.item.BingoItemRegistry.fromItemStack(stack);
-            if (itemOpt.isPresent() && itemOpt.get().getId().equals("lockdown")) {
-                stack.shrink(1);
-                return;
-            }
-        }
     }
 
     /**

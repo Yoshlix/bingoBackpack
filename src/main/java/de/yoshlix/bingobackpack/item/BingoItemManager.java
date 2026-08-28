@@ -15,6 +15,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
@@ -123,31 +124,70 @@ public class BingoItemManager {
         // Optional: Only drop from monsters
         // if (!(killedEntity instanceof Monster)) return;
 
-        // Get all droppable items and try to drop one
-        for (BingoItem item : BingoItemRegistry.getDroppableItems()) {
-            double dropChance = item.getDropChance() * globalDropChanceMultiplier;
+        // Bonus chance for stronger mobs
+        double mobBonus = 1.0;
+        if (killedEntity instanceof Monster monster) {
+            double healthBonus = monster.getMaxHealth() / 20.0; // 1.0 for normal mobs
+            mobBonus = Math.min(healthBonus, 2.0); // Cap at 2x
+        }
 
-            // Bonus chance for stronger mobs
-            if (killedEntity instanceof Monster monster) {
-                double healthBonus = monster.getMaxHealth() / 20.0; // 1.0 for normal mobs
-                dropChance *= Math.min(healthBonus, 2.0); // Cap at 2x
-            }
+        BingoItem item = rollForDrop(mobBonus);
+        if (item == null) {
+            return;
+        }
 
-            if (random.nextDouble() < dropChance) {
-                dropItemAtEntity(killedEntity, item);
+        dropItemAtEntity(killedEntity, item);
+        lastDropTime.put(playerId, System.currentTimeMillis());
 
-                // Set cooldown
-                lastDropTime.put(playerId, System.currentTimeMillis());
+        serverPlayer.sendSystemMessage(
+                Component.literal("§6Ein " + item.getRarity().getColorCode() +
+                        item.getName() + " §6ist gedroppt!"));
+    }
 
-                // Notify player
-                serverPlayer.sendSystemMessage(
-                        Component.literal("§6Ein " + item.getRarity().getColorCode() +
-                                item.getName() + " §6ist gedroppt!"));
+    /**
+     * Pick at most one item to drop, weighted by each item's drop chance.
+     *
+     * Rolling the items one by one and stopping at the first hit would make the
+     * outcome depend on registration order: a later item only gets its turn if
+     * every earlier one missed, which cost the last-registered items about a
+     * quarter of their configured rate. Rolling once against the summed chance
+     * and then picking proportionally gives every item exactly its configured
+     * probability, whatever the order.
+     *
+     * @param mobBonus multiplier applied to every chance (tougher mobs drop more)
+     * @return the item to drop, or null for no drop
+     */
+    private BingoItem rollForDrop(double mobBonus) {
+        List<BingoItem> candidates = BingoItemRegistry.getDroppableItems();
+        if (candidates.isEmpty()) {
+            return null;
+        }
 
-                // Only one item per kill
-                return;
+        double[] chances = new double[candidates.size()];
+        double total = 0.0;
+        for (int i = 0; i < candidates.size(); i++) {
+            chances[i] = candidates.get(i).getDropChance() * globalDropChanceMultiplier * mobBonus;
+            total += chances[i];
+        }
+
+        if (total <= 0.0) {
+            return null;
+        }
+
+        // If the configured chances add up past 1, every kill drops something;
+        // the weights then only decide which item it is.
+        double roll = random.nextDouble();
+        if (roll >= total) {
+            return null;
+        }
+
+        for (int i = 0; i < candidates.size(); i++) {
+            roll -= chances[i];
+            if (roll < 0) {
+                return candidates.get(i);
             }
         }
+        return candidates.get(candidates.size() - 1);
     }
 
     /**

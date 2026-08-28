@@ -1,5 +1,7 @@
 package de.yoshlix.bingobackpack.item;
 
+import de.yoshlix.bingobackpack.bingo.BingoBridge;
+import me.jfenn.bingo.api.data.IBingoTeam;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
@@ -13,6 +15,7 @@ import net.minecraft.world.item.component.ItemLore;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Abstract base class for all Bingo Items.
@@ -32,6 +35,29 @@ import java.util.List;
 public abstract class BingoItem {
 
     public static final String NBT_KEY = "BingoItemId";
+
+    /** Shared RNG, so items don't each seed their own. */
+    protected static final Random RANDOM = new Random();
+
+    /**
+     * Resolve the player's bingo team, sending the standard failure message if
+     * bingo is not running or the player is not on a team.
+     *
+     * @return the team, or null if the item cannot be used right now
+     */
+    protected static IBingoTeam requireTeam(ServerPlayer player) {
+        if (!BingoBridge.isAvailable()) {
+            player.sendSystemMessage(Component.literal("§cKein Bingo-Spiel aktiv!"));
+            return null;
+        }
+
+        IBingoTeam team = BingoBridge.getTeamForPlayer(player.getUUID());
+        if (team == null) {
+            player.sendSystemMessage(Component.literal("§cDu bist in keinem Team!"));
+            return null;
+        }
+        return team;
+    }
 
     /**
      * Unique identifier for this item type.
@@ -173,6 +199,78 @@ public abstract class BingoItem {
 
         CompoundTag tag = customData.copyTag();
         return tag.contains(NBT_KEY) && tag.getString(NBT_KEY).orElse("").equals(getId());
+    }
+
+    /**
+     * Remove a single copy of this item from the player's inventory.
+     *
+     * Items that defer their effect to a chat selection must call this
+     * <em>before</em> applying the effect and abort if it returns false —
+     * otherwise a player who stashes the item in the team backpack between
+     * opening the menu and confirming gets the effect for free.
+     *
+     * @return true if a copy was found and removed
+     */
+    public boolean consumeOne(ServerPlayer player) {
+        var inventory = player.getInventory();
+        for (int i = 0; i < inventory.getContainerSize(); i++) {
+            ItemStack stack = inventory.getItem(i);
+            if (matches(stack)) {
+                stack.shrink(1);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Whether the player is carrying at least one copy of this item. */
+    public boolean isCarriedBy(ServerPlayer player) {
+        var inventory = player.getInventory();
+        for (int i = 0; i < inventory.getContainerSize(); i++) {
+            if (matches(inventory.getItem(i))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Guard for the command handlers of deferred items: confirms the player is
+     * still carrying the item before the effect runs.
+     *
+     * Handlers execute synchronously on the server thread, so a check here and
+     * a {@link #consumeOrWarn} after the effect cannot be interleaved with an
+     * inventory change — while still leaving the item intact if the effect
+     * itself fails.
+     *
+     * @return true if the effect may proceed
+     */
+    public static boolean requireItemOrWarn(ServerPlayer player, String itemId) {
+        boolean present = BingoItemRegistry.getById(itemId)
+                .map(item -> item.isCarriedBy(player))
+                .orElse(false);
+        if (!present) {
+            player.sendSystemMessage(
+                    Component.literal("§cDu hast das Item nicht mehr im Inventar!"));
+        }
+        return present;
+    }
+
+    /**
+     * Consume one copy of the item with the given ID, reporting failure to the
+     * player. For use from the static command handlers of deferred items.
+     *
+     * @return true if the effect may proceed
+     */
+    public static boolean consumeOrWarn(ServerPlayer player, String itemId) {
+        boolean consumed = BingoItemRegistry.getById(itemId)
+                .map(item -> item.consumeOne(player))
+                .orElse(false);
+        if (!consumed) {
+            player.sendSystemMessage(
+                    Component.literal("§cDu hast das Item nicht mehr im Inventar!"));
+        }
+        return consumed;
     }
 
     /**

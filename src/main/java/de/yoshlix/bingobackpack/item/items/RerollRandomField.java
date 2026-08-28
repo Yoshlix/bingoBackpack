@@ -7,14 +7,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.List;
-import java.util.Random;
 
 /**
  * Rerolls a random bingo field on the card.
  */
 public class RerollRandomField extends BingoItem {
-
-    private final Random random = new Random();
 
     @Override
     public String getId() {
@@ -62,7 +59,7 @@ public class RerollRandomField extends BingoItem {
             return false;
         }
 
-        var target = incomplete.get(random.nextInt(incomplete.size()));
+        var target = incomplete.get(RANDOM.nextInt(incomplete.size()));
         int x = target.getX();
         int y = target.getY();
         String oldName = BingoBridge.nameOf(target);

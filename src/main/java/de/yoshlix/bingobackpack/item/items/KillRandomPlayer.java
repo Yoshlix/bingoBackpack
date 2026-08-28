@@ -10,15 +10,12 @@ import net.minecraft.world.damagesource.DamageSource;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.UUID;
 
 /**
  * Kills a random player from any enemy team.
  */
 public class KillRandomPlayer extends BingoItem {
-
-    private final Random random = new Random();
 
     @Override
     public String getId() {
@@ -42,17 +39,12 @@ public class KillRandomPlayer extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
-        var teams = BingoBridge.getAllTeams();
-        if (!BingoBridge.isAvailable()) {
-            player.sendSystemMessage(Component.literal("§cKein Bingo-Spiel aktiv!"));
+        var playerTeam = requireTeam(player);
+        if (playerTeam == null) {
             return false;
         }
 
-        var playerTeam = BingoBridge.getTeamForPlayer(player.getUUID());
-        if (playerTeam == null) {
-            player.sendSystemMessage(Component.literal("§cDu bist in keinem Team!"));
-            return false;
-        }
+        var teams = BingoBridge.getAllTeams();
 
         // Find all online enemy players (excluding shielded ones)
         var server = ((net.minecraft.server.level.ServerLevel) player.level()).getServer();
@@ -81,7 +73,7 @@ public class KillRandomPlayer extends BingoItem {
         }
 
         // Select random enemy
-        ServerPlayer target = enemyPlayers.get(random.nextInt(enemyPlayers.size()));
+        ServerPlayer target = enemyPlayers.get(RANDOM.nextInt(enemyPlayers.size()));
 
         // Kill the target
         target.kill((net.minecraft.server.level.ServerLevel) target.level());

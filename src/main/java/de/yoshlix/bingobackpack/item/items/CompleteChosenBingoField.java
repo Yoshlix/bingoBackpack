@@ -48,15 +48,8 @@ public class CompleteChosenBingoField extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
-        var teams = BingoBridge.getAllTeams();
-        if (!BingoBridge.isAvailable()) {
-            player.sendSystemMessage(Component.literal("§cKein Bingo-Spiel aktiv!"));
-            return false;
-        }
-
-        var playerTeam = BingoBridge.getTeamForPlayer(player.getUUID());
+        var playerTeam = requireTeam(player);
         if (playerTeam == null) {
-            player.sendSystemMessage(Component.literal("§cDu bist in keinem Team!"));
             return false;
         }
 
@@ -111,6 +104,12 @@ public class CompleteChosenBingoField extends BingoItem {
      * Called from command handler.
      */
     public static boolean processSelection(ServerPlayer player, String objectiveId) {
+        // Make sure the item is still there before the effect runs; it may have
+        // been moved to the team backpack while the selection was pending.
+        if (!requireItemOrWarn(player, "complete_chosen_bingo_field")) {
+            return false;
+        }
+
         PendingSelection pending = pendingSelections.remove(player.getUUID());
         if (pending == null) {
             player.sendSystemMessage(Component.literal("§cKeine ausstehende Auswahl vorhanden!"));
@@ -151,22 +150,11 @@ public class CompleteChosenBingoField extends BingoItem {
             player.sendSystemMessage(Component.literal("§a✓ Feld abgeschlossen: §f" + name));
 
             // Consume item from inventory (find and remove the item)
-            consumeItem(player);
+            consumeOrWarn(player, "complete_chosen_bingo_field");
             return true;
         } else {
             player.sendSystemMessage(Component.literal("§cFehler beim Abschließen des Feldes!"));
             return false;
-        }
-    }
-
-    private static void consumeItem(ServerPlayer player) {
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            var stack = player.getInventory().getItem(i);
-            var itemOpt = de.yoshlix.bingobackpack.item.BingoItemRegistry.fromItemStack(stack);
-            if (itemOpt.isPresent() && itemOpt.get().getId().equals("complete_chosen_bingo_field")) {
-                stack.shrink(1);
-                return;
-            }
         }
     }
 

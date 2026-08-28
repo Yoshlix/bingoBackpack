@@ -16,7 +16,6 @@ import net.minecraft.world.level.block.entity.ChestBlockEntity;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 /**
  * Schrödingers Kiste - Spawns a chest with completely random loot.
@@ -24,8 +23,6 @@ import java.util.Random;
  * empty!
  */
 public class SchrodingersChest extends BingoItem {
-
-    private final Random random = new Random();
 
     @Override
     public String getId() {
@@ -80,7 +77,7 @@ public class SchrodingersChest extends BingoItem {
 
             // Put loot in random slots
             for (ItemStack stack : loot) {
-                int slot = random.nextInt(27);
+                int slot = RANDOM.nextInt(27);
                 // Find empty slot if occupied
                 for (int i = 0; i < 27 && !chest.getItem(slot).isEmpty(); i++) {
                     slot = (slot + 1) % 27;
@@ -100,7 +97,7 @@ public class SchrodingersChest extends BingoItem {
                 "§5§l✦ §dQuantenfluktuationen stabilisieren sich... §5§l✦",
                 "§5§l✦ §dDas Schicksal ist besiegelt... §5§l✦"
         };
-        player.sendSystemMessage(Component.literal(messages[random.nextInt(messages.length)]));
+        player.sendSystemMessage(Component.literal(messages[RANDOM.nextInt(messages.length)]));
         player.sendSystemMessage(Component.literal("§7Eine mysteriöse Kiste erscheint bei §f" +
                 chestPos.getX() + ", " + chestPos.getY() + ", " + chestPos.getZ()));
 
@@ -111,51 +108,51 @@ public class SchrodingersChest extends BingoItem {
         List<ItemStack> loot = new ArrayList<>();
 
         // Roll for loot tier (weighted)
-        int roll = random.nextInt(100);
+        int roll = RANDOM.nextInt(100);
 
         if (roll < 5) {
             // 5% - EMPTY! Unlucky!
             // No items added
         } else if (roll < 25) {
             // 20% - Trash tier
-            loot.add(new ItemStack(Items.DIRT, 32 + random.nextInt(32)));
-            if (random.nextBoolean()) {
-                loot.add(new ItemStack(Items.COBBLESTONE, 16 + random.nextInt(48)));
+            loot.add(new ItemStack(Items.DIRT, 32 + RANDOM.nextInt(32)));
+            if (RANDOM.nextBoolean()) {
+                loot.add(new ItemStack(Items.COBBLESTONE, 16 + RANDOM.nextInt(48)));
             }
-            if (random.nextBoolean()) {
-                loot.add(new ItemStack(Items.ROTTEN_FLESH, 8 + random.nextInt(16)));
+            if (RANDOM.nextBoolean()) {
+                loot.add(new ItemStack(Items.ROTTEN_FLESH, 8 + RANDOM.nextInt(16)));
             }
         } else if (roll < 50) {
             // 25% - Common tier
-            loot.add(new ItemStack(Items.IRON_INGOT, 4 + random.nextInt(12)));
-            loot.add(new ItemStack(Items.COAL, 8 + random.nextInt(24)));
-            if (random.nextBoolean()) {
-                loot.add(new ItemStack(Items.GOLD_INGOT, 2 + random.nextInt(6)));
+            loot.add(new ItemStack(Items.IRON_INGOT, 4 + RANDOM.nextInt(12)));
+            loot.add(new ItemStack(Items.COAL, 8 + RANDOM.nextInt(24)));
+            if (RANDOM.nextBoolean()) {
+                loot.add(new ItemStack(Items.GOLD_INGOT, 2 + RANDOM.nextInt(6)));
             }
-            if (random.nextBoolean()) {
-                loot.add(new ItemStack(Items.BREAD, 8 + random.nextInt(8)));
+            if (RANDOM.nextBoolean()) {
+                loot.add(new ItemStack(Items.BREAD, 8 + RANDOM.nextInt(8)));
             }
         } else if (roll < 75) {
             // 25% - Good tier
-            loot.add(new ItemStack(Items.DIAMOND, 2 + random.nextInt(4)));
-            loot.add(new ItemStack(Items.IRON_INGOT, 8 + random.nextInt(16)));
-            if (random.nextBoolean()) {
-                loot.add(new ItemStack(Items.ENDER_PEARL, 2 + random.nextInt(4)));
+            loot.add(new ItemStack(Items.DIAMOND, 2 + RANDOM.nextInt(4)));
+            loot.add(new ItemStack(Items.IRON_INGOT, 8 + RANDOM.nextInt(16)));
+            if (RANDOM.nextBoolean()) {
+                loot.add(new ItemStack(Items.ENDER_PEARL, 2 + RANDOM.nextInt(4)));
             }
-            if (random.nextBoolean()) {
-                loot.add(new ItemStack(Items.EXPERIENCE_BOTTLE, 4 + random.nextInt(12)));
+            if (RANDOM.nextBoolean()) {
+                loot.add(new ItemStack(Items.EXPERIENCE_BOTTLE, 4 + RANDOM.nextInt(12)));
             }
         } else if (roll < 90) {
             // 15% - Great tier
-            loot.add(new ItemStack(Items.DIAMOND, 6 + random.nextInt(10)));
-            loot.add(new ItemStack(Items.NETHERITE_SCRAP, 1 + random.nextInt(2)));
-            loot.add(new ItemStack(Items.GOLDEN_APPLE, 2 + random.nextInt(3)));
-            if (random.nextBoolean()) {
-                loot.add(new ItemStack(Items.BLAZE_ROD, 4 + random.nextInt(8)));
+            loot.add(new ItemStack(Items.DIAMOND, 6 + RANDOM.nextInt(10)));
+            loot.add(new ItemStack(Items.NETHERITE_SCRAP, 1 + RANDOM.nextInt(2)));
+            loot.add(new ItemStack(Items.GOLDEN_APPLE, 2 + RANDOM.nextInt(3)));
+            if (RANDOM.nextBoolean()) {
+                loot.add(new ItemStack(Items.BLAZE_ROD, 4 + RANDOM.nextInt(8)));
             }
         } else if (roll < 98) {
             // 8% - Jackpot tier
-            loot.add(new ItemStack(Items.DIAMOND_BLOCK, 1 + random.nextInt(3)));
+            loot.add(new ItemStack(Items.DIAMOND_BLOCK, 1 + RANDOM.nextInt(3)));
             loot.add(new ItemStack(Items.ENCHANTED_GOLDEN_APPLE, 1));
             loot.add(new ItemStack(Items.NETHERITE_INGOT, 1));
             loot.add(new ItemStack(Items.ELYTRA, 1));
@@ -164,16 +161,16 @@ public class SchrodingersChest extends BingoItem {
             // Add a random Bingo item
             var items = BingoItemRegistry.getDroppableItems();
             if (!items.isEmpty()) {
-                var randomItem = items.get(random.nextInt(items.size()));
+                var randomItem = items.get(RANDOM.nextInt(items.size()));
                 loot.add(randomItem.createItemStack());
                 // Maybe add a second one
-                if (random.nextBoolean()) {
-                    randomItem = items.get(random.nextInt(items.size()));
+                if (RANDOM.nextBoolean()) {
+                    randomItem = items.get(RANDOM.nextInt(items.size()));
                     loot.add(randomItem.createItemStack());
                 }
             }
             // Plus some diamonds
-            loot.add(new ItemStack(Items.DIAMOND, 4 + random.nextInt(8)));
+            loot.add(new ItemStack(Items.DIAMOND, 4 + RANDOM.nextInt(8)));
         }
 
         return loot;

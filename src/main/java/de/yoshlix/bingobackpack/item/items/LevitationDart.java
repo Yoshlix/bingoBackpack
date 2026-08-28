@@ -14,12 +14,9 @@ import net.minecraft.world.effect.MobEffects;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.UUID;
 
 public class LevitationDart extends BingoItem {
-
-    private final Random random = new Random();
 
     @Override
     public String getId() {
@@ -43,17 +40,12 @@ public class LevitationDart extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
-        var teams = BingoBridge.getAllTeams();
-        if (!BingoBridge.isAvailable()) {
-            player.sendSystemMessage(Component.literal("§cKein Bingo-Spiel aktiv!"));
+        var playerTeam = requireTeam(player);
+        if (playerTeam == null) {
             return false;
         }
 
-        var playerTeam = BingoBridge.getTeamForPlayer(player.getUUID());
-        if (playerTeam == null) {
-            player.sendSystemMessage(Component.literal("§cDu bist in keinem Team!"));
-            return false;
-        }
+        var teams = BingoBridge.getAllTeams();
 
         // Find targets
         List<ServerPlayer> enemies = new ArrayList<>();
@@ -85,7 +77,7 @@ public class LevitationDart extends BingoItem {
         }
 
         // Pick random enemy
-        ServerPlayer target = enemies.get(random.nextInt(enemies.size()));
+        ServerPlayer target = enemies.get(RANDOM.nextInt(enemies.size()));
 
         // Apply Levitation
         int duration = (int) (ModConfig.getInstance().levitationDurationSeconds * 20 * getDurationMultiplier());

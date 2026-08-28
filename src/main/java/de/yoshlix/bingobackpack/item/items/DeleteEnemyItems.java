@@ -12,15 +12,12 @@ import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.UUID;
 
 /**
  * Deletes a random number of items from a random enemy player's inventory.
  */
 public class DeleteEnemyItems extends BingoItem {
-
-    private final Random random = new Random();
 
     @Override
     public String getId() {
@@ -45,17 +42,12 @@ public class DeleteEnemyItems extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
-        var teams = BingoBridge.getAllTeams();
-        if (!BingoBridge.isAvailable()) {
-            player.sendSystemMessage(Component.literal("§cKein Bingo-Spiel aktiv!"));
+        var playerTeam = requireTeam(player);
+        if (playerTeam == null) {
             return false;
         }
 
-        var playerTeam = BingoBridge.getTeamForPlayer(player.getUUID());
-        if (playerTeam == null) {
-            player.sendSystemMessage(Component.literal("§cDu bist in keinem Team!"));
-            return false;
-        }
+        var teams = BingoBridge.getAllTeams();
 
         // Find all online enemy players (excluding shielded ones)
         var server = ((net.minecraft.server.level.ServerLevel) player.level()).getServer();
@@ -84,10 +76,10 @@ public class DeleteEnemyItems extends BingoItem {
         }
 
         // Select random enemy
-        ServerPlayer target = enemyPlayers.get(random.nextInt(enemyPlayers.size()));
+        ServerPlayer target = enemyPlayers.get(RANDOM.nextInt(enemyPlayers.size()));
 
         // Determine number of items to delete
-        int itemsToDelete = ModConfig.getInstance().deleteEnemyItemsMin + random
+        int itemsToDelete = ModConfig.getInstance().deleteEnemyItemsMin + RANDOM
                 .nextInt(ModConfig.getInstance().deleteEnemyItemsMax - ModConfig.getInstance().deleteEnemyItemsMin + 1);
 
         // Find non-empty slots (excluding unbreakable items from starter kit)

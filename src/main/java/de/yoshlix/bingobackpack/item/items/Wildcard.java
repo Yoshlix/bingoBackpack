@@ -84,6 +84,12 @@ public class Wildcard extends BingoItem {
      * Called when a player selects an item.
      */
     public static boolean selectItem(ServerPlayer player, String itemId) {
+        // Make sure the item is still there before the effect runs; it may have
+        // been moved to the team backpack while the selection was pending.
+        if (!requireItemOrWarn(player, "wildcard")) {
+            return false;
+        }
+
         List<BingoItem> validItems = pendingSelections.get(player.getUUID());
         if (validItems == null) {
             player.sendSystemMessage(Component.literal("§cKeine ausstehende Wildcard-Auswahl!"));
@@ -111,23 +117,12 @@ public class Wildcard extends BingoItem {
                 .append(Component.literal(" §6gewählt!")));
 
         // Consume the Wildcard item
-        consumeItem(player);
+        consumeOrWarn(player, "wildcard");
 
         // Clean up
         pendingSelections.remove(player.getUUID());
 
         return true;
-    }
-
-    private static void consumeItem(ServerPlayer player) {
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            var stack = player.getInventory().getItem(i);
-            var itemOpt = de.yoshlix.bingobackpack.item.BingoItemRegistry.fromItemStack(stack);
-            if (itemOpt.isPresent() && itemOpt.get().getId().equals("wildcard")) {
-                stack.shrink(1);
-                return;
-            }
-        }
     }
 
     /**

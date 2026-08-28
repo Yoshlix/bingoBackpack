@@ -20,7 +20,7 @@ import java.util.*;
  */
 public class SwapLocationChoice extends BingoItem {
 
-    private static final Map<UUID, List<ServerPlayer>> pendingSwaps = new HashMap<>();
+    private static final Map<UUID, List<UUID>> pendingSwaps = new HashMap<>();
 
     @Override
     public String getId() {
@@ -44,15 +44,8 @@ public class SwapLocationChoice extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
-        var teams = BingoBridge.getAllTeams();
-        if (!BingoBridge.isAvailable()) {
-            player.sendSystemMessage(Component.literal("§cKein Bingo-Spiel aktiv!"));
-            return false;
-        }
-
-        var playerTeam = BingoBridge.getTeamForPlayer(player.getUUID());
+        var playerTeam = requireTeam(player);
         if (playerTeam == null) {
-            player.sendSystemMessage(Component.literal("§cDu bist in keinem Team!"));
             return false;
         }
 
@@ -60,10 +53,7 @@ public class SwapLocationChoice extends BingoItem {
         var server = ((ServerLevel) player.level()).getServer();
         var enemyPlayers = new ArrayList<ServerPlayer>();
 
-        for (var team : teams) {
-            if (team.getId().equals(playerTeam.getId()))
-                continue;
-
+        for (var team : BingoBridge.getEnemyTeams(playerTeam.getId())) {
             // Skip if the entire team is shielded
             if (TeamShield.isTeamShielded(team.getId())) {
                 continue;
@@ -83,7 +73,8 @@ public class SwapLocationChoice extends BingoItem {
         }
 
         // Store pending swap
-        pendingSwaps.put(player.getUUID(), enemyPlayers);
+        pendingSwaps.put(player.getUUID(),
+                enemyPlayers.stream().map(ServerPlayer::getUUID).toList());
 
         // Show selection menu
         player.sendSystemMessage(Component.literal(""));
@@ -115,7 +106,7 @@ public class SwapLocationChoice extends BingoItem {
     }
 
     public static boolean processSwap(ServerPlayer player, String selection) {
-        List<ServerPlayer> enemies = pendingSwaps.remove(player.getUUID());
+        List<UUID> enemies = pendingSwaps.remove(player.getUUID());
         if (enemies == null) {
             player.sendSystemMessage(Component.literal("§cKeine ausstehende Auswahl!"));
             return false;
@@ -134,10 +125,20 @@ public class SwapLocationChoice extends BingoItem {
             return false;
         }
 
-        ServerPlayer target = enemies.get(index);
+        // Resolve the target now: the stored entity would be stale after a
+        // reconnect, and the menu is only a snapshot of who was reachable then.
+        var server = ((ServerLevel) player.level()).getServer();
+        ServerPlayer target = server.getPlayerList().getPlayer(enemies.get(index));
 
-        if (!target.isAlive() || target.isRemoved()) {
+        if (target == null || !target.isAlive() || target.isRemoved()) {
             player.sendSystemMessage(Component.literal("§cSpieler nicht mehr verfügbar!"));
+            return false;
+        }
+
+        // Re-check the shield: it may have been raised while the menu was open.
+        if (TeamShield.isPlayerShielded(target.getUUID())) {
+            player.sendSystemMessage(Component.literal(
+                    "§cDieser Spieler ist inzwischen durch ein §bTeam-Schild §cgeschützt!"));
             return false;
         }
 
@@ -163,6 +164,12 @@ public class SwapLocationChoice extends BingoItem {
             return false;
         }
 
+        // Consume last, but before the effect: the item may have been moved to
+        // the team backpack or handed off while the selection was pending.
+        if (!consumeOrWarn(player, "swap_location_choice")) {
+            return false;
+        }
+
         // Swap positions
         player.teleportTo(targetLevel, targetX, targetY, targetZ,
                 java.util.Set.of(), targetYaw, targetPitch, true);
@@ -179,19 +186,7 @@ public class SwapLocationChoice extends BingoItem {
                         target.getName().getString() + " §6haben die Positionen getauscht!"),
                 false);
 
-        consumeItem(player);
         return true;
-    }
-
-    private static void consumeItem(ServerPlayer player) {
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            var stack = player.getInventory().getItem(i);
-            var itemOpt = de.yoshlix.bingobackpack.item.BingoItemRegistry.fromItemStack(stack);
-            if (itemOpt.isPresent() && itemOpt.get().getId().equals("swap_location_choice")) {
-                stack.shrink(1);
-                return;
-            }
-        }
     }
 
     public static boolean hasPendingSwap(UUID playerId) {
