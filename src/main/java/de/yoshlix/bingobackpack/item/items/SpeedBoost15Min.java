@@ -64,12 +64,22 @@ public class SpeedBoost15Min extends BingoItem {
                 true,
                 true));
 
-        int totalSeconds = durationTicks / 20;
+        // Vanilla's effect merge silently ignores a new instance with a lower
+        // amplifier than what's already running, no matter its duration — so a
+        // weaker boost used while a stronger one is active doesn't actually
+        // change anything. Read the effect back instead of trusting our own
+        // computed duration, so the message (and "gestackt") always match what
+        // the player is really left with.
+        var resultingEffect = player.getEffect(MobEffects.SPEED);
+        int actualDurationTicks = resultingEffect != null ? resultingEffect.getDuration() : durationTicks;
+        boolean stacked = existingEffect != null && actualDurationTicks > existingEffect.getDuration();
+
+        int totalSeconds = actualDurationTicks / 20;
         int minutes = totalSeconds / 60;
         int seconds = totalSeconds % 60;
         String timeStr = seconds > 0 ? minutes + " Min " + seconds + " Sek" : minutes + " Minuten";
         player.sendSystemMessage(Component.literal("§a§lWOOSH! §rSpeed III für " + timeStr + "! " +
-                (existingEffect != null ? "§e(gestackt!)" : "")));
+                (stacked ? "§e(gestackt!)" : "")));
         return true;
     }
 

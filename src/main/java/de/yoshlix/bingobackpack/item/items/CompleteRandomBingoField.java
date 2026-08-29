@@ -41,17 +41,16 @@ public class CompleteRandomBingoField extends BingoItem {
             return false;
         }
 
-        var cards = BingoBridge.getAllCards();
-        if (cards.isEmpty()) {
-            player.sendSystemMessage(Component.literal("§cKeine Bingo-Karten vorhanden!"));
+        var card = BingoBridge.getCardForTeam(playerTeam.getId());
+        if (card == null) {
+            player.sendSystemMessage(Component.literal("§cKeine Bingo-Karte vorhanden!"));
             return false;
         }
 
-        // Find all fields this team has not completed yet, across every card
-        var incomplete = new java.util.ArrayList<ICardEntryView>();
-        for (var card : cards) {
-            incomplete.addAll(BingoBridge.getIncompleteEntries(card, playerTeam.getId()));
-        }
+        // Find all fields on the team's own card that it has not completed yet.
+        // Using getAllCards() here would let this pick (and "complete") a field
+        // that only exists on some other team's card in multi-card modes.
+        var incomplete = BingoBridge.getIncompleteEntries(card, playerTeam.getId());
 
         if (incomplete.isEmpty()) {
             player.sendSystemMessage(Component.literal("§6Alle Felder wurden bereits abgeschlossen!"));

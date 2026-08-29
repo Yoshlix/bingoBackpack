@@ -36,9 +36,16 @@ public class TimeWatch extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
-        if (!(player.level() instanceof ServerLevel level)) {
+        // ServerClockManager is SavedData — each ServerLevel keeps its own copy
+        // of it, so calling this through player.level() while the player is in
+        // the Nether/End would silently flip a clock state nobody ever sees,
+        // instead of the actual Overworld day/night cycle the description and
+        // broadcast promise. Always target the real Overworld level so the
+        // item does the same visible thing no matter where it's used.
+        if (!(player.level() instanceof ServerLevel playerLevel)) {
             return false;
         }
+        ServerLevel level = playerLevel.getServer().overworld();
 
         // MC 26.2 moved world time behind ClockManager: time is tracked per WorldClock
         // and set by jumping to a named marker, instead of setDayTime(ticks).

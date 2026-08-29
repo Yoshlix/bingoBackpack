@@ -1,10 +1,8 @@
 package de.yoshlix.bingobackpack.item.items;
 
-import de.yoshlix.bingobackpack.bingo.BingoBridge;
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
 import de.yoshlix.bingobackpack.item.TeleportSafety;
-import me.jfenn.bingo.api.BingoApi;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
@@ -49,23 +47,10 @@ public class SwapLocationChoice extends BingoItem {
             return false;
         }
 
-        // Find all online enemy players (excluding shielded ones)
-        var server = ((ServerLevel) player.level()).getServer();
-        var enemyPlayers = new ArrayList<ServerPlayer>();
-
-        for (var team : BingoBridge.getEnemyTeams(playerTeam.getId())) {
-            // Skip if the entire team is shielded
-            if (TeamShield.isTeamShielded(team.getId())) {
-                continue;
-            }
-
-            for (UUID memberId : team.getPlayers()) {
-                ServerPlayer enemy = server.getPlayerList().getPlayer(memberId);
-                if (enemy != null && !TeamShield.isPlayerShielded(memberId)) {
-                    enemyPlayers.add(enemy);
-                }
-            }
-        }
+        // onlineEnemies() also filters out anyone mid-death/respawn, so a dead
+        // enemy can't show up in the menu just to bounce back as "not
+        // available" once clicked.
+        var enemyPlayers = onlineEnemies(player, playerTeam);
 
         if (enemyPlayers.isEmpty()) {
             player.sendSystemMessage(Component.literal("§6Keine gegnerischen Spieler online! (Oder alle geschützt)"));

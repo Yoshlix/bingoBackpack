@@ -4,7 +4,6 @@ import de.yoshlix.bingobackpack.bingo.BingoBridge;
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
 import de.yoshlix.bingobackpack.ModConfig;
-import me.jfenn.bingo.api.BingoApi;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -49,8 +48,6 @@ public class TeamShield extends BingoItem {
         if (playerTeam == null) {
             return false;
         }
-
-        var teams = BingoBridge.getAllTeams();
 
         String teamId = playerTeam.getId();
 

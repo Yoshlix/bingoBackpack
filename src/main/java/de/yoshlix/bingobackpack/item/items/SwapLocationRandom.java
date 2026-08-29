@@ -1,17 +1,13 @@
 package de.yoshlix.bingobackpack.item.items;
 
-import de.yoshlix.bingobackpack.bingo.BingoBridge;
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
 import de.yoshlix.bingobackpack.item.TeleportSafety;
-import me.jfenn.bingo.api.BingoApi;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Swaps the location of two random players.
@@ -45,28 +41,10 @@ public class SwapLocationRandom extends BingoItem {
             return false;
         }
 
-        var teams = BingoBridge.getAllTeams();
-
-        // Find all online enemy players (excluding shielded ones)
         var server = ((ServerLevel) player.level()).getServer();
-        var enemyPlayers = new ArrayList<ServerPlayer>();
-
-        for (var team : teams) {
-            if (team.getId().equals(playerTeam.getId()))
-                continue;
-
-            // Skip if the entire team is shielded
-            if (TeamShield.isTeamShielded(team.getId())) {
-                continue;
-            }
-
-            for (UUID memberId : team.getPlayers()) {
-                ServerPlayer enemy = server.getPlayerList().getPlayer(memberId);
-                if (enemy != null && !TeamShield.isPlayerShielded(memberId)) {
-                    enemyPlayers.add(enemy);
-                }
-            }
-        }
+        // onlineEnemies() also filters out anyone mid-death/respawn: without
+        // that, a swap could land on a player standing in their death screen.
+        var enemyPlayers = onlineEnemies(player, playerTeam);
 
         if (enemyPlayers.isEmpty()) {
             player.sendSystemMessage(Component.literal("§6Keine gegnerischen Spieler online! (Oder alle geschützt)"));

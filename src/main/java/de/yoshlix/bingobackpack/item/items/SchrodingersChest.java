@@ -50,21 +50,26 @@ public class SchrodingersChest extends BingoItem {
             return false;
         }
 
-        // Find a suitable position for the chest (at player's feet or in front)
-        BlockPos chestPos = player.blockPosition();
+        // Find a suitable position for the chest (at player's feet, above, in
+        // front, or above that): try each in turn and use the first one that's
+        // actually free, instead of blindly overwriting whatever is there once
+        // the earlier candidates fail.
+        int facing = (int) ((player.getYRot() + 180) / 90) % 4;
+        net.minecraft.core.Direction inFront = facing == 0 ? net.minecraft.core.Direction.SOUTH
+                : facing == 1 ? net.minecraft.core.Direction.WEST
+                        : facing == 2 ? net.minecraft.core.Direction.NORTH
+                                : net.minecraft.core.Direction.EAST;
 
-        // Try to find air block nearby
-        if (!level.getBlockState(chestPos).isAir()) {
-            chestPos = chestPos.above();
-        }
-        if (!level.getBlockState(chestPos).isAir()) {
-            // Try in front of player
-            int facing = (int) ((player.getYRot() + 180) / 90) % 4;
-            chestPos = player.blockPosition().relative(
-                    facing == 0 ? net.minecraft.core.Direction.SOUTH
-                            : facing == 1 ? net.minecraft.core.Direction.WEST
-                                    : facing == 2 ? net.minecraft.core.Direction.NORTH
-                                            : net.minecraft.core.Direction.EAST);
+        BlockPos feet = player.blockPosition();
+        BlockPos frontPos = feet.relative(inFront);
+        List<BlockPos> candidates = List.of(feet, feet.above(), frontPos, frontPos.above());
+
+        BlockPos chestPos = candidates.get(candidates.size() - 1);
+        for (BlockPos candidate : candidates) {
+            if (level.getBlockState(candidate).isAir()) {
+                chestPos = candidate;
+                break;
+            }
         }
 
         // Place the chest

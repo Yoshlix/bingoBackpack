@@ -1,20 +1,12 @@
 package de.yoshlix.bingobackpack.item.items;
 
-import de.yoshlix.bingobackpack.bingo.BingoBridge;
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
 import de.yoshlix.bingobackpack.ModConfig;
-import de.yoshlix.bingobackpack.BingoBackpack;
-import me.jfenn.bingo.api.BingoApi;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 
 public class LevitationDart extends BingoItem {
 
@@ -45,31 +37,10 @@ public class LevitationDart extends BingoItem {
             return false;
         }
 
-        var teams = BingoBridge.getAllTeams();
-
-        // Find targets
-        List<ServerPlayer> enemies = new ArrayList<>();
-        if (!(player.level() instanceof ServerLevel serverLevel))
-            return false;
-        var server = serverLevel.getServer();
-
-        for (var team : teams) {
-            if (team.getId().equals(playerTeam.getId()))
-                continue;
-
-            if (TeamShield.isTeamShielded(team.getId()))
-                continue;
-
-            for (UUID memberId : team.getPlayers()) {
-                if (TeamShield.isPlayerShielded(memberId))
-                    continue;
-
-                ServerPlayer enemy = server.getPlayerList().getPlayer(memberId);
-                if (enemy != null) {
-                    enemies.add(enemy);
-                }
-            }
-        }
+        // Also filters out anyone mid-death/respawn, unlike the manual loop
+        // this replaced — that let the effect land on a dead target and fizzle
+        // for nothing while still consuming the item.
+        var enemies = onlineEnemies(player, playerTeam);
 
         if (enemies.isEmpty()) {
             player.sendSystemMessage(Component.literal("§cKeine angreifbaren Gegner gefunden!"));

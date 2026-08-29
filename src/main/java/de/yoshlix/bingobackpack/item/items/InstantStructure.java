@@ -84,11 +84,18 @@ public class InstantStructure extends BingoItem {
                 return false;
             }
 
-            // Erstelle CommandSourceStack mit Admin-Rechten für den Befehl (Server Console)
+            // performPrefixedCommand() itself returns void — the dispatcher
+            // reports success/failure asynchronously through this callback
+            // instead. /place structure can fail at runtime (e.g. ungenerated
+            // chunks) without throwing, and withSuppressedOutput() hides the
+            // chat message that would've told us; without the callback we'd
+            // have no way to notice and would report success on a failure.
+            boolean[] succeeded = {false};
             CommandSourceStack source = level.getServer().createCommandSourceStack()
                     .withPosition(player.position())
                     .withRotation(player.getRotationVector())
-                    .withSuppressedOutput();
+                    .withSuppressedOutput()
+                    .withCallback((ok, count) -> succeeded[0] = ok);
 
             Optional<BlockPos> safePos = TeleportSafety.findSafeSurface(level, player.blockPosition().getX(), player.blockPosition().getZ());
             if (safePos.isEmpty()) {
@@ -98,7 +105,6 @@ public class InstantStructure extends BingoItem {
 
             BlockPos pos = safePos.get().offset(0, -1, 0);
             String structureId = null;
-            boolean placed = false;
 
             for (int i = 0; i < Math.min(8, candidates.size()); i++) {
                 structureId = candidates.remove(RANDOM.nextInt(candidates.size()));
@@ -110,12 +116,14 @@ public class InstantStructure extends BingoItem {
                 String command = String.format("place structure %s %d %d %d",
                         structureId, pos.getX(), pos.getY(), pos.getZ());
 
+                succeeded[0] = false;
                 level.getServer().getCommands().performPrefixedCommand(source, command);
-                placed = true;
-                break;
+                if (succeeded[0]) {
+                    break;
+                }
             }
 
-            if (!placed) {
+            if (!succeeded[0]) {
                 player.sendSystemMessage(Component.literal("§cKonnte keine vollständige Struktur platzieren. Item wurde nicht verbraucht."));
                 return false;
             }

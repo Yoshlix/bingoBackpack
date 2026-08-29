@@ -150,7 +150,7 @@ public class TimeoutPlayer extends BingoItem {
         }
 
         // Apply timeout effects
-        applyTimeout(target);
+        applyTimeout(target, ModConfig.getInstance().timeoutPlayerDurationSeconds);
 
         player.sendSystemMessage(Component.literal("§c§l❄ §r" + target.getName().getString() +
                 " §7wurde für " + ModConfig.getInstance().timeoutPlayerDurationSeconds + " Sekunden eingefroren!"));
@@ -168,16 +168,26 @@ public class TimeoutPlayer extends BingoItem {
         return true;
     }
 
-    private static void applyTimeout(ServerPlayer target) {
-        // Apply slowness, mining fatigue, weakness, blindness
-        int durationTicks = ModConfig.getInstance().timeoutPlayerDurationSeconds * 20;
+    /**
+     * Applies the freeze debuffs and tracks it in {@link #timedOutPlayers}, so
+     * both {@link #isTimedOut} and {@link #tickTimeoutExpiry} see it no matter
+     * whether the freeze came from this item or from {@link TimeoutTeam} —
+     * shared here so a future fix only has to happen in one place.
+     */
+    static void applyTimeout(ServerPlayer target, int durationSeconds) {
+        int durationTicks = durationSeconds * 20;
 
         target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, durationTicks, 255, false, false, true));
         target.addEffect(new MobEffectInstance(MobEffects.MINING_FATIGUE, durationTicks, 255, false, false, true));
         target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, durationTicks, 255, false, false, true));
         target.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, durationTicks, 0, false, false, true));
-        target.addEffect(new MobEffectInstance(MobEffects.JUMP_BOOST, durationTicks, 128, false, false, true)); // Negative
-                                                                                                                // jump
+        // There is no vanilla potion effect that suppresses jumping; a Jump
+        // Boost with a very high amplifier used to sit here as an attempted
+        // substitute, but Jump Boost only ever makes jumps higher — it launched
+        // the "frozen" target into the air on every space-bar press instead of
+        // holding them still. Slowness+Mining Fatigue+Weakness+Blindness already
+        // remove any ability to fight back or get anywhere; being able to still
+        // hop in place is harmless and reads as far less broken.
 
         // Disable flight if the player has temporary flight
         if (!target.isCreative() && !target.isSpectator()) {
@@ -194,8 +204,7 @@ public class TimeoutPlayer extends BingoItem {
             Flight15Min.clearFlightTime(target.getUUID());
         }
 
-        timedOutPlayers.put(target.getUUID(),
-                System.currentTimeMillis() + (ModConfig.getInstance().timeoutPlayerDurationSeconds * 1000L));
+        timedOutPlayers.put(target.getUUID(), System.currentTimeMillis() + durationSeconds * 1000L);
     }
 
     public static boolean isTimedOut(UUID playerId) {

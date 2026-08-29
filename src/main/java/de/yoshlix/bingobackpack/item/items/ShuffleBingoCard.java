@@ -40,14 +40,20 @@ public class ShuffleBingoCard extends BingoItem {
             return false;
         }
 
-        var oldCard = BingoBridge.getActiveCard();
-        if (oldCard == null) {
+        // getActiveCard() only ever returns a single lobby-preview card; in
+        // multi-card modes each team has its own, so we have to walk all of
+        // them to actually shuffle "the entire board" as advertised.
+        var cards = BingoBridge.getAllCards();
+        if (cards.isEmpty()) {
             player.sendSystemMessage(Component.literal("§cKeine Bingo-Karte vorhanden!"));
             return false;
         }
 
-        // shuffleCard() regenerates the card with a fresh seed internally
-        boolean shuffled = BingoBridge.shuffleCard(oldCard);
+        // shuffleCard() regenerates each card with a fresh seed internally
+        boolean shuffled = false;
+        for (var card : cards) {
+            shuffled |= BingoBridge.shuffleCard(card);
+        }
 
         if (shuffled) {
             player.sendSystemMessage(Component.literal("§6§l★★★ BINGO KARTE NEU GEMISCHT! ★★★"));

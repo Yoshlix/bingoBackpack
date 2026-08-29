@@ -41,30 +41,14 @@ public class RandomTeleport extends BingoItem {
     public boolean onUse(ServerPlayer player) {
         ServerLevel level = (ServerLevel) player.level();
 
-        // Calculate random offset
-        double angle = RANDOM.nextDouble() * 2 * Math.PI;
-        int distance = ModConfig.getInstance().randomTeleportMinDistance + RANDOM.nextInt(
-                ModConfig.getInstance().randomTeleportMaxDistance - ModConfig.getInstance().randomTeleportMinDistance);
+        Optional<BlockPos> safePos = Optional.empty();
+        for (int i = 0; i < 11 && safePos.isEmpty(); i++) {
+            double angle = RANDOM.nextDouble() * 2 * Math.PI;
+            int distance = pickDistance();
+            int newX = (int) (player.getX() + Math.cos(angle) * distance);
+            int newZ = (int) (player.getZ() + Math.sin(angle) * distance);
 
-        int newX = (int) (player.getX() + Math.cos(angle) * distance);
-        int newZ = (int) (player.getZ() + Math.sin(angle) * distance);
-
-        Optional<BlockPos> safePos = TeleportSafety.findSafeSurface(level, newX, newZ);
-
-        if (safePos.isEmpty()) {
-            // Try a few more times with different positions
-            for (int i = 0; i < 10; i++) {
-                angle = RANDOM.nextDouble() * 2 * Math.PI;
-                distance = ModConfig.getInstance().randomTeleportMinDistance
-                        + RANDOM.nextInt(ModConfig.getInstance().randomTeleportMaxDistance
-                                - ModConfig.getInstance().randomTeleportMinDistance);
-                newX = (int) (player.getX() + Math.cos(angle) * distance);
-                newZ = (int) (player.getZ() + Math.sin(angle) * distance);
-
-                safePos = TeleportSafety.findSafeSurface(level, newX, newZ);
-                if (safePos.isPresent())
-                    break;
-            }
+            safePos = TeleportSafety.findSafeSurface(level, newX, newZ);
         }
 
         if (safePos.isEmpty()) {
@@ -82,6 +66,18 @@ public class RandomTeleport extends BingoItem {
         player.sendSystemMessage(Component.literal("§7Neue Position: §f" + targetPos.getX() + ", " + targetPos.getY() + ", " + targetPos.getZ()));
 
         return true;
+    }
+
+    /**
+     * A random distance within the configured range. Guards against
+     * max <= min (e.g. a misconfigured server) — RANDOM.nextInt(bound)
+     * throws for a non-positive bound, which would otherwise crash the item.
+     */
+    private static int pickDistance() {
+        int min = ModConfig.getInstance().randomTeleportMinDistance;
+        int max = ModConfig.getInstance().randomTeleportMaxDistance;
+        int span = Math.max(1, max - min);
+        return min + RANDOM.nextInt(span);
     }
 
     @Override

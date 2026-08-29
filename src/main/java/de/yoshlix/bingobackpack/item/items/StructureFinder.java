@@ -54,15 +54,15 @@ public class StructureFinder extends BingoItem {
                 StructureTags.ON_OCEAN_EXPLORER_MAPS);
 
         BlockPos playerPos = player.blockPosition();
-        int radius = ModConfig.getInstance().structureSearchRadius / 16; // Chunks? Actually the arg is usually radius
-                                                                         // in chunks or blocks depending on version.
-        // findNearestMapStructure usually takes radius in chunks being 100 max? No,
-        // it's radius in chunks usually. 100 is standard.
-        // Let's assume the config is in blocks, so divide by 16.
-        if (radius < 1)
+        // findNearestMapStructure()'s radius parameter is in chunks (verified
+        // against ServerLevel's signature); structureSearchRadius is configured
+        // in blocks, hence the /16. searchedBlocks tracks whatever radius we
+        // actually end up using, in blocks, for the failure message below.
+        int radius = ModConfig.getInstance().structureSearchRadius / 16;
+        if (radius < 1) {
             radius = 100;
-
-        // Actually, findNearestMapStructure return nullable BlockPos
+        }
+        int searchedBlocks = radius * 16;
 
         BlockPos nearestPos = null;
         String nearestName = "Unbekannt";
@@ -89,7 +89,7 @@ public class StructureFinder extends BingoItem {
             return true;
         } else {
             player.sendSystemMessage(Component.literal("§cKeine Strukturen in der Nähe gefunden ("
-                    + ModConfig.getInstance().structureSearchRadius + " Blöcke)."));
+                    + searchedBlocks + " Blöcke)."));
             return false; // Don't consume if nothing found? Or consume? Usually compasses don't consume
                           // if they fail.
         }

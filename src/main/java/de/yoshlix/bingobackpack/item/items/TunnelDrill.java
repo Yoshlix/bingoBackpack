@@ -62,6 +62,10 @@ public class TunnelDrill extends BingoItem {
 
         int blocksDestroyed = 0;
         int bedrockHit = 0;
+        // Deepest layer that was actually cleared along the drilling axis, so
+        // the vertical landing spot never lands the player inside solid rock
+        // if bedrock blocks the shaft partway through.
+        int reachableDepth = 0;
 
         // Drill the tunnel
         for (int depth = 1; depth <= TUNNEL_LENGTH; depth++) {
@@ -116,6 +120,10 @@ public class TunnelDrill extends BingoItem {
                     blocksDestroyed++;
                 }
             }
+
+            if ((goingUp || goingDown) && !level.getBlockState(centerPos).is(Blocks.BEDROCK)) {
+                reachableDepth = depth;
+            }
         }
 
         // Play drilling sound
@@ -135,11 +143,15 @@ public class TunnelDrill extends BingoItem {
             player.sendSystemMessage(Component.literal("§8(Bedrock kann nicht durchbohrt werden)"));
         }
 
-        // Teleport player slightly into the tunnel to prevent getting stuck
-        if (!goingUp && !goingDown) {
-            BlockPos safePos = startPos.relative(facing, 2);
-            player.teleportTo(safePos.getX() + 0.5, safePos.getY(), safePos.getZ() + 0.5);
-        }
+        // Teleport the player into the tunnel. For a horizontal bore this just
+        // avoids standing face-first against rock; for a vertical bore it's not
+        // optional — digging down removes the floor the player is standing on,
+        // so without moving them to the (solid, un-dug) bottom of the shaft they
+        // free-fall the full 30 blocks and take lethal fall damage.
+        BlockPos safePos = goingUp ? startPos.above(reachableDepth)
+                : goingDown ? startPos.below(reachableDepth)
+                : startPos.relative(facing, 2);
+        player.teleportTo(safePos.getX() + 0.5, safePos.getY(), safePos.getZ() + 0.5);
 
         return true;
     }

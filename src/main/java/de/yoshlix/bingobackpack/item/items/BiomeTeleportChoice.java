@@ -30,7 +30,7 @@ public class BiomeTeleportChoice extends BingoItem {
     private static final List<String> COMMON_BIOMES = List.of(
             "plains", "forest", "desert", "taiga", "snowy_plains",
             "jungle", "swamp", "badlands", "beach", "ocean",
-            "deep_ocean", "river", "mountain", "windswept_hills", "savanna",
+            "deep_ocean", "river", "jagged_peaks", "windswept_hills", "savanna",
             "dark_forest", "birch_forest", "cherry_grove", "meadow", "frozen_ocean");
 
     @Override

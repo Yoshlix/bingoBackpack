@@ -16,6 +16,14 @@ interface WindowsDisplayApi extends StdCallLibrary {
     boolean EnumDisplaySettingsEx(String deviceName, int modeNum, DevMode devMode, int flags);
     int ChangeDisplaySettingsEx(String deviceName, DevMode devMode, Pointer hwnd, int flags, Pointer lParam);
 
+    /**
+     * Grants the next SetForegroundWindow call a one-time pass through the
+     * focus-stealing prevention. Called with ASFW_ANY (-1) right before we
+     * spawn the browser, since Windows otherwise sometimes leaves the new
+     * tab in the background while fullscreen Minecraft keeps focus.
+     */
+    boolean AllowSetForegroundWindow(int dwProcessId);
+
     class DisplayDevice extends Structure {
         // DISPLAY_DEVICEW is always 840 bytes (32 + 128 + 128 + 128 UTF-16 chars).
         // Do not call size() in the constructor: Structure's superclass runs

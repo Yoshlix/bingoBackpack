@@ -11,8 +11,9 @@ import java.util.List;
 
 /**
  * Shows a fake "Windows is shutting down" full-screen overlay on a random
- * enemy's client. Purely cosmetic — the target can click or press ESC to
- * dismiss it; nothing touches their actual machine.
+ * enemy's client. Purely cosmetic — nothing touches their actual machine —
+ * but the target has to solve a small random challenge to dismiss it; ESC and
+ * clicking the background don't close it.
  */
 public class FakeShutdownItem extends BingoItem {
 
@@ -58,7 +59,7 @@ public class FakeShutdownItem extends BingoItem {
     @Override
     public List<Component> getExtraLore() {
         return List.of(
-                Component.literal("§8Nur Show — der Gegner klickt es weg."),
+                Component.literal("§8Nur Show — muss aber erst eine Aufgabe lösen."),
                 Component.literal("§7Braucht den Client-Mod beim Ziel."));
     }
 

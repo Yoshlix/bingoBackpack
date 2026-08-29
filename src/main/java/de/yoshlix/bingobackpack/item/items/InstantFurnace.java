@@ -52,8 +52,11 @@ public class InstantFurnace extends BingoItem {
         int totalSmelted = 0;
         Map<String, Integer> smeltedItems = new HashMap<>();
 
-        // Go through entire inventory
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+        // Go through the main 36 slots only — getContainerSize() also counts
+        // armor and offhand, so smeltable gear worn or held there (e.g. raw
+        // meat in the offhand) used to get smelted along with everything else.
+        int mainSlots = player.getInventory().getNonEquipmentItems().size();
+        for (int i = 0; i < mainSlots; i++) {
             ItemStack stack = player.getInventory().getItem(i);
             if (stack.isEmpty())
                 continue;

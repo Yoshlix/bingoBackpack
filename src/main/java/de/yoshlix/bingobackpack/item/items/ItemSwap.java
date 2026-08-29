@@ -4,7 +4,6 @@ import de.yoshlix.bingobackpack.bingo.BingoBridge;
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
 import de.yoshlix.bingobackpack.ModConfig;
-import me.jfenn.bingo.api.BingoApi;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;

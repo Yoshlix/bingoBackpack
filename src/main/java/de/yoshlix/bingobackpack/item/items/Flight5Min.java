@@ -89,7 +89,7 @@ public class Flight5Min extends BingoItem {
         boolean wasStacked = currentMaxEndTime > System.currentTimeMillis();
         player.sendSystemMessage(Component.literal("§b§l✈ §rFlug für " + timeStr + "! " +
                 (wasStacked ? "§e(gestackt!)" : "")));
-        player.sendSystemMessage(Component.literal("§7Doppelsprung zum Starten!"));
+        player.sendSystemMessage(Component.literal("§7Du fliegst bereits!"));
 
         return true;
     }

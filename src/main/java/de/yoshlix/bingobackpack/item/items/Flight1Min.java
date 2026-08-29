@@ -94,7 +94,7 @@ public class Flight1Min extends BingoItem {
         player.sendSystemMessage(
                 Component.literal("§b§l✈ §rFlug für " + timeStr + "! " +
                         (wasStacked ? "§e(gestackt!)" : "")));
-        player.sendSystemMessage(Component.literal("§7Doppelsprung zum Starten!"));
+        player.sendSystemMessage(Component.literal("§7Du fliegst bereits!"));
 
         return true;
     }

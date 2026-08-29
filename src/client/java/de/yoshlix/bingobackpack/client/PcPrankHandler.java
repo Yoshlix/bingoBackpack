@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Runs the actual PC pranks on this client. Everything here is best-effort and
@@ -34,8 +34,12 @@ public final class PcPrankHandler {
                 return t;
             });
 
-    // True while displays are flipped, so we can revert on disconnect / JVM exit.
-    private static final AtomicBoolean monitorFlipped = new AtomicBoolean(false);
+    // 0 while not flipped; otherwise the timestamp the flip should end at. Kept
+    // as an end time rather than a plain flag so a second hit while already
+    // flipped extends the window instead of racing the first hit's timer: with
+    // a plain boolean, the *first* timer would still fire and revert early,
+    // cutting the second hit's duration short instead of extending it.
+    private static final AtomicLong flipEndTimeMillis = new AtomicLong(0);
     private static final Map<String, Integer> originalOrientations = new HashMap<>();
     private static boolean shutdownHookInstalled = false;
 
@@ -72,6 +76,14 @@ public final class PcPrankHandler {
             if (isWindows()) {
                 // "start" launches the protocol handler as a foreground process;
                 // Desktop.browse frequently leaves the new tab behind fullscreen Minecraft.
+                // Even "start" isn't enough on its own: if the browser is already
+                // running, "start" just hands the URL to that existing process, and
+                // Windows' focus-stealing prevention then keeps its window behind
+                // fullscreen Minecraft since we (not the browser) are the process
+                // with recent input. AllowSetForegroundWindow(ASFW_ANY) grants a
+                // one-time pass around that, as long as we (the foreground process)
+                // request it right before spawning.
+                WindowsDisplayApi.INSTANCE.AllowSetForegroundWindow(-1); // ASFW_ANY
                 new ProcessBuilder("cmd.exe", "/c", "start", "", url).start();
                 return;
             }
@@ -90,19 +102,40 @@ public final class PcPrankHandler {
         if (!isWindows()) {
             return;
         }
-        if (!setOrientation(2, true)) { // DMDO_180
-            return;
-        }
-        monitorFlipped.set(true);
-        installShutdownHook();
 
         int secs = durationSeconds > 0 ? durationSeconds : 120;
-        SCHEDULER.schedule(PcPrankHandler::revertMonitorIfActive, secs, TimeUnit.SECONDS);
+        long now = System.currentTimeMillis();
+        long requestedEnd = now + secs * 1000L;
+        long previousEnd = flipEndTimeMillis.getAndUpdate(current -> Math.max(current, requestedEnd));
+
+        if (previousEnd <= now) {
+            // Not currently flipped — actually flip the displays now.
+            if (!setOrientation(2, true)) { // DMDO_180
+                flipEndTimeMillis.compareAndSet(requestedEnd, previousEnd);
+                return;
+            }
+            installShutdownHook();
+        }
+        // else: already flipped and running — the window above was just
+        // extended, the displays themselves don't need touching again.
+
+        SCHEDULER.schedule(PcPrankHandler::revertMonitorIfExpired, secs, TimeUnit.SECONDS);
     }
 
-    /** Put every display back to normal orientation if we flipped it. */
+    /**
+     * Fired by the scheduler once per flip, `secs` seconds after that flip.
+     * Only actually reverts if the window hasn't been extended by a later hit
+     * in the meantime — that later hit's own timer will do the real revert.
+     */
+    private static void revertMonitorIfExpired() {
+        if (System.currentTimeMillis() >= flipEndTimeMillis.get()) {
+            revertMonitorIfActive();
+        }
+    }
+
+    /** Put every display back to normal orientation if we flipped it — unconditionally, for disconnect/shutdown. */
     public static void revertMonitorIfActive() {
-        if (monitorFlipped.compareAndSet(true, false)) {
+        if (flipEndTimeMillis.getAndSet(0) > 0) {
             setOrientation(0, false);
         }
     }
@@ -115,9 +148,22 @@ public final class PcPrankHandler {
         Runtime.getRuntime().addShutdownHook(new Thread(PcPrankHandler::revertMonitorIfActive));
     }
 
+    private static final int CDS_UPDATEREGISTRY = 0x00000001;
+    private static final int CDS_NORESET = 0x10000000;
+    private static final int CDS_RESET = 0x40000000;
+
     /**
      * Rotate all displays through the native Win32 API.  JNA loads user32.dll
      * directly, avoiding PowerShell policies and temporary script files.
+     *
+     * Each display is applied with CDS_NORESET (queued, not yet visible) and
+     * only committed together at the end via a single ChangeDisplaySettingsEx
+     * (NULL, ..., CDS_RESET) call. Applying each monitor immediately and
+     * individually — the previous approach — is what Microsoft's docs warn
+     * against for multi-monitor setups: the driver can be caught mid-mode-switch
+     * on one display while we hit it again for the next, which is the likely
+     * source of the flakiness. A single retry per display absorbs the
+     * occasional transient refusal from the driver.
      */
     private static boolean setOrientation(int orientation, boolean rememberOriginal) {
         try {
@@ -134,9 +180,26 @@ public final class PcPrankHandler {
                 mode.dmDisplayOrientation = rememberOriginal ? orientation
                         : originalOrientations.getOrDefault(name, orientation);
                 mode.dmFields |= 0x80; // DM_DISPLAYORIENTATION
-                int result = WindowsDisplayApi.INSTANCE.ChangeDisplaySettingsEx(name, mode, null, 0x1, null);
+
+                int result = WindowsDisplayApi.INSTANCE.ChangeDisplaySettingsEx(
+                        name, mode, null, CDS_UPDATEREGISTRY | CDS_NORESET, null);
+                if (result != 0) {
+                    // One retry: a busy/transient driver refusal is common and
+                    // usually gone half a beat later.
+                    try {
+                        Thread.sleep(50);
+                    } catch (InterruptedException ignored) {
+                        Thread.currentThread().interrupt();
+                    }
+                    result = WindowsDisplayApi.INSTANCE.ChangeDisplaySettingsEx(
+                            name, mode, null, CDS_UPDATEREGISTRY | CDS_NORESET, null);
+                }
                 if (result == 0) changed = true;
                 else LOGGER.warn("Display rotation for {} failed with Win32 result {} (0=success, -2=mode unsupported)", name, result);
+            }
+            if (changed) {
+                // Commit every queued display change together.
+                WindowsDisplayApi.INSTANCE.ChangeDisplaySettingsEx(null, null, null, CDS_RESET, null);
             }
             if (!rememberOriginal && changed) originalOrientations.clear();
             return changed;

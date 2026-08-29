@@ -94,6 +94,13 @@ public class ResetFieldProgress extends BingoItem {
 
             player.sendSystemMessage(message);
             index++;
+
+            // Limit display: with several enemy teams each sitting on a full
+            // card, this list can otherwise flood the chat.
+            if (index > 20) {
+                player.sendSystemMessage(Component.literal("  §7... und mehr"));
+                break;
+            }
         }
 
         player.sendSystemMessage(Component.literal(""));

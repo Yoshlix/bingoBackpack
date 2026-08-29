@@ -85,11 +85,13 @@ public class CoinFlipOfFate extends BingoItem {
             }
         }
 
-        // Find incomplete fields for the target team
-        var incompleteObjectives = new ArrayList<ICardEntryView>();
-        for (var card : BingoBridge.getAllCards()) {
-            incompleteObjectives.addAll(BingoBridge.getIncompleteEntries(card, targetTeam.getId()));
-        }
+        // Find incomplete fields on the target team's own card. Aggregating
+        // across getAllCards() here would let the flip pick a field that only
+        // exists on some other team's card in multi-card modes.
+        var targetCard = BingoBridge.getCardForTeam(targetTeam.getId());
+        var incompleteObjectives = targetCard == null
+                ? new ArrayList<ICardEntryView>()
+                : new ArrayList<>(BingoBridge.getIncompleteEntries(targetCard, targetTeam.getId()));
 
         if (incompleteObjectives.isEmpty()) {
             player.sendSystemMessage(Component.literal("§6Keine offenen Felder für das Zielteam!"));

@@ -26,8 +26,11 @@ public class WeakHeartsItem extends BingoItem {
 
     private static final Identifier MODIFIER_ID = Identifier.parse("bingobackpack:weak_hearts");
 
-    // Target UUID -> epoch millis when the debuff should lift.
-    private static final Map<UUID, Long> affected = new HashMap<>();
+    private record ActiveDebuff(int hearts, long endTimeMillis) {
+    }
+
+    // Target UUID -> active debuff state.
+    private static final Map<UUID, ActiveDebuff> affected = new HashMap<>();
 
     @Override
     public String getId() {
@@ -98,7 +101,26 @@ public class WeakHeartsItem extends BingoItem {
             target.setHealth((float) cap);
         }
 
-        affected.put(target.getUUID(), System.currentTimeMillis() + seconds * 1000L);
+        affected.put(target.getUUID(), new ActiveDebuff(hearts, System.currentTimeMillis() + seconds * 1000L));
+    }
+
+    /**
+     * Re-adds the modifier if it's missing from the current attribute instance.
+     * Being transient means it lives on the entity object, not on disk — a
+     * disconnect/reconnect within the debuff window hands the player a fresh
+     * entity without it, which would otherwise lift the cap early for free.
+     */
+    private static void reapplyIfMissing(ServerPlayer target, int hearts) {
+        AttributeInstance attr = target.getAttribute(Attributes.MAX_HEALTH);
+        if (attr == null || attr.hasModifier(MODIFIER_ID)) {
+            return;
+        }
+        double cap = hearts * 2.0;
+        double delta = cap - attr.getValue();
+        attr.addTransientModifier(new AttributeModifier(MODIFIER_ID, delta, AttributeModifier.Operation.ADD_VALUE));
+        if (target.getHealth() > (float) cap) {
+            target.setHealth((float) cap);
+        }
     }
 
     private static void restore(ServerPlayer target) {
@@ -118,7 +140,12 @@ public class WeakHeartsItem extends BingoItem {
         }
         long now = System.currentTimeMillis();
         affected.entrySet().removeIf(entry -> {
-            if (now < entry.getValue()) {
+            ActiveDebuff debuff = entry.getValue();
+            if (now < debuff.endTimeMillis()) {
+                ServerPlayer target = server.getPlayerList().getPlayer(entry.getKey());
+                if (target != null) {
+                    reapplyIfMissing(target, debuff.hearts());
+                }
                 return false;
             }
             restore(server.getPlayerList().getPlayer(entry.getKey()));

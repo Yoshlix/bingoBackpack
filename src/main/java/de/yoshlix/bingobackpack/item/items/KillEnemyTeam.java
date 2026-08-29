@@ -3,11 +3,8 @@ package de.yoshlix.bingobackpack.item.items;
 import de.yoshlix.bingobackpack.bingo.BingoBridge;
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
-import me.jfenn.bingo.api.BingoApi;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.damagesource.DamageTypes;
 
 import java.util.List;
 import java.util.UUID;
@@ -99,6 +96,6 @@ public class KillEnemyTeam extends BingoItem {
 
     @Override
     public boolean canDropFromMob() {
-        return true; // Too powerful
+        return true;
     }
 }
