@@ -97,6 +97,25 @@ public class ModConfig {
     public int weakHeartsCount = 3;
     public int weakHeartsDurationSeconds = 120;
 
+    // Gambling items
+    public int crisisBetBoostDurationSeconds = 90;
+    public int crisisBetPunishDurationSeconds = 45;
+    public int slotMachineBuffDurationSeconds = 45;
+    public int curseOrBlessingBlessingDurationSeconds = 90;
+    public int curseOrBlessingCurseDurationSeconds = 60;
+    public int russianRouletteHitDurationSeconds = 30;
+    public int russianRouletteMissDurationSeconds = 45;
+    public int diceOfFateGoodDurationSeconds = 60;
+    public int fieldLockDurationSeconds = 120;
+
+    // Chaos-Stunde: once per match, at a random point, drop chances double for
+    // a while. Purely automatic — no item triggers it.
+    public boolean chaosHourEnabled = true;
+    public int chaosHourEarliestMinute = 10;
+    public int chaosHourLatestMinute = 30;
+    public int chaosHourDurationMinutes = 5;
+    public double chaosHourDropMultiplier = 2.0;
+
     // Discord Integration
     public boolean discordEnabled = false;
     public String discordToken = "";

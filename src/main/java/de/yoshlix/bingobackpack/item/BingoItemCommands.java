@@ -58,11 +58,26 @@ public class BingoItemCommands {
                         .then(Commands.literal("wildcard")
                                 .then(Commands.argument("selection", StringArgumentType.greedyString())
                                         .executes(BingoItemCommands::handleWildcard)))
-                        
+
                         // /backpack perks pheromone <self|enemy>
                         .then(Commands.literal("pheromone")
                                 .then(Commands.argument("target", StringArgumentType.word())
-                                        .executes(BingoItemCommands::handlePheromone)))));
+                                        .executes(BingoItemCommands::handlePheromone)))
+
+                        // /backpack perks lock <number>
+                        .then(Commands.literal("lock")
+                                .then(Commands.argument("selection", StringArgumentType.string())
+                                        .executes(BingoItemCommands::handleFieldLock)))
+
+                        // /backpack perks dice <unter|ueber|genau>
+                        .then(Commands.literal("dice")
+                                .then(Commands.argument("selection", StringArgumentType.word())
+                                        .executes(BingoItemCommands::handleDice)))
+
+                        // /backpack perks pushluck <keep|push>
+                        .then(Commands.literal("pushluck")
+                                .then(Commands.argument("selection", StringArgumentType.word())
+                                        .executes(BingoItemCommands::handlePushLuck)))));
     }
 
     private static int handlePheromone(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -200,6 +215,45 @@ public class BingoItemCommands {
         }
 
         player.sendSystemMessage(Component.literal("§cKeine ausstehende Wildcard-Auswahl!"));
+        return 0;
+    }
+
+    private static int handleFieldLock(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
+        String selection = StringArgumentType.getString(context, "selection");
+
+        if (FieldLock.hasPendingSelection(player.getUUID())) {
+            FieldLock.processSelection(player, selection);
+            return 1;
+        }
+
+        player.sendSystemMessage(Component.literal("§cKeine ausstehende Sperr-Auswahl!"));
+        return 0;
+    }
+
+    private static int handleDice(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
+        String selection = StringArgumentType.getString(context, "selection");
+
+        if (DiceOfFate.hasPendingBet(player.getUUID())) {
+            DiceOfFate.processBet(player, selection);
+            return 1;
+        }
+
+        player.sendSystemMessage(Component.literal("§cKeine ausstehende Wette!"));
+        return 0;
+    }
+
+    private static int handlePushLuck(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
+        String selection = StringArgumentType.getString(context, "selection");
+
+        if (PushYourLuck.hasActiveClimb(player.getUUID())) {
+            PushYourLuck.processChoice(player, selection);
+            return 1;
+        }
+
+        player.sendSystemMessage(Component.literal("§cKein laufender Versuch!"));
         return 0;
     }
 }

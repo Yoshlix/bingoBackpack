@@ -97,6 +97,12 @@ public class BingoBackpack implements ModInitializer {
 			// Mob Pheromone spawning
 			MobPheromone.tickPheromoneEffects(server);
 			Paranoia.tickParanoiaEffects(server);
+
+			// Field Lock enforcement
+			de.yoshlix.bingobackpack.item.items.FieldLock.tickFieldLocks(server);
+
+			// Chaos-Stunde scheduling
+			de.yoshlix.bingobackpack.item.ChaosHour.tick(server);
 		});
 	}
 }

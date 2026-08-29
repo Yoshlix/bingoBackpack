@@ -86,6 +86,15 @@ public class BingoItemRegistry {
         // Gambling / Chaos Items
         register(new CoinFlipOfFate());
         register(new SchrodingersChest());
+        register(new CrisisBet());
+        register(new SlotMachine());
+        register(new CurseOrBlessing());
+        register(new RussianRoulette());
+        register(new ChainReaction());
+        register(new PokerHand());
+        register(new DiceOfFate());
+        register(new FieldLock());
+        register(new PushYourLuck());
 
         // Utility Items (new)
         register(new InstantFurnace());

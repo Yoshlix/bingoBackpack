@@ -71,6 +71,7 @@ public class BingoIntegration {
                 return;
             }
             TemporaryItemStateManager.clearForRoundReset(srv);
+            de.yoshlix.bingobackpack.item.ChaosHour.onRoundStarted();
             onRoundStarted(srv);
         });
 

@@ -47,13 +47,14 @@ public enum ItemRarity {
      */
     public double getBaseDropChance() {
         ModConfig config = ModConfig.getInstance();
-        return switch (this) {
+        double base = switch (this) {
             case COMMON -> config.dropChanceCommon;
             case UNCOMMON -> config.dropChanceUncommon;
             case RARE -> config.dropChanceRare;
             case EPIC -> config.dropChanceEpic;
             case LEGENDARY -> config.dropChanceLegendary;
         };
+        return base * ChaosHour.dropMultiplier();
     }
 
     /**

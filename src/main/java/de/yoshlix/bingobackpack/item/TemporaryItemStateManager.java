@@ -4,12 +4,16 @@ import de.yoshlix.bingobackpack.banish.BanishManager;
 import de.yoshlix.bingobackpack.item.items.BiomeTeleportChoice;
 import de.yoshlix.bingobackpack.item.items.WeakHeartsItem;
 import de.yoshlix.bingobackpack.item.items.CompleteChosenBingoField;
+import de.yoshlix.bingobackpack.item.items.CurseOrBlessing;
+import de.yoshlix.bingobackpack.item.items.DiceOfFate;
+import de.yoshlix.bingobackpack.item.items.FieldLock;
 import de.yoshlix.bingobackpack.item.items.Flight15Min;
 import de.yoshlix.bingobackpack.item.items.Flight1Min;
 import de.yoshlix.bingobackpack.item.items.Flight5Min;
 import de.yoshlix.bingobackpack.item.items.Lockdown;
 import de.yoshlix.bingobackpack.item.items.MobPheromone;
 import de.yoshlix.bingobackpack.item.items.Paranoia;
+import de.yoshlix.bingobackpack.item.items.PushYourLuck;
 import de.yoshlix.bingobackpack.item.items.RerollChosenField;
 import de.yoshlix.bingobackpack.item.items.ResetFieldProgress;
 import de.yoshlix.bingobackpack.item.items.SwapLocationChoice;
@@ -52,6 +56,11 @@ public class TemporaryItemStateManager {
         ResetFieldProgress.clearPendingResets();
         SwapLocationChoice.clearPendingSwaps();
         Wildcard.clearPendingSelections();
+        CurseOrBlessing.clearAllStreaks();
+        DiceOfFate.clearAllPendingBets();
+        FieldLock.clearAll();
+        PushYourLuck.clearAllClimbs();
+        ChaosHour.reset();
     }
 
     private static void clearPlayerState(ServerPlayer player) {
