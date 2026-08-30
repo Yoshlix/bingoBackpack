@@ -10,10 +10,7 @@ import java.util.*;
 
 public class TaskMaze implements BanishTask {
 
-    // Maze cell size: each cell is 2 blocks wide with 1 block wall between
-    private static final int MAZE_W = 9;  // grid cells width
-    private static final int MAZE_H = 9;  // grid cells height  
-    private static final int CELL = 2;    // cell interior size
+    private static final int CELL = 2; // cell interior size
 
     @Override
     public String getTaskDescription() {
@@ -22,10 +19,13 @@ public class TaskMaze implements BanishTask {
 
     @Override
     public Vec3 generate(ServerLevel level, BlockPos origin) {
-        Random rand = new Random(origin.asLong() + System.nanoTime());
+        Random rand = TaskUtils.randomFor(origin);
 
-        int totalW = MAZE_W * (CELL + 1) + 1;
-        int totalH = MAZE_H * (CELL + 1) + 1;
+        int mazeW = 7 + rand.nextInt(5); // 7-11: grid size varies per instance
+        int mazeH = 7 + rand.nextInt(5);
+
+        int totalW = mazeW * (CELL + 1) + 1;
+        int totalH = mazeH * (CELL + 1) + 1;
 
         // Clear area
         TaskUtils.fill(level, origin.offset(-2, -2, -2), origin.offset(totalW + 2, 6, totalH + 2), Blocks.AIR);
@@ -42,11 +42,11 @@ public class TaskMaze implements BanishTask {
             }
         }
 
-        // Generate maze using DFS (recursive backtracker)
-        boolean[][] visited = new boolean[MAZE_W][MAZE_H];
+        // Generate maze using DFS (recursive backtracker) - a genuine perfect
+        // maze, spanning the whole grid, seeded fresh every instance.
+        boolean[][] visited = new boolean[mazeW][mazeH];
         Stack<int[]> stack = new Stack<>();
-        
-        // Start at top-left
+
         visited[0][0] = true;
         stack.push(new int[]{0, 0});
         carveCell(level, origin, 0, 0);
@@ -56,21 +56,18 @@ public class TaskMaze implements BanishTask {
             int cx = current[0];
             int cz = current[1];
 
-            // Get unvisited neighbors
             List<int[]> neighbors = new ArrayList<>();
             if (cx > 0 && !visited[cx - 1][cz]) neighbors.add(new int[]{cx - 1, cz});
-            if (cx < MAZE_W - 1 && !visited[cx + 1][cz]) neighbors.add(new int[]{cx + 1, cz});
+            if (cx < mazeW - 1 && !visited[cx + 1][cz]) neighbors.add(new int[]{cx + 1, cz});
             if (cz > 0 && !visited[cx][cz - 1]) neighbors.add(new int[]{cx, cz - 1});
-            if (cz < MAZE_H - 1 && !visited[cx][cz + 1]) neighbors.add(new int[]{cx, cz + 1});
+            if (cz < mazeH - 1 && !visited[cx][cz + 1]) neighbors.add(new int[]{cx, cz + 1});
 
             if (!neighbors.isEmpty()) {
                 int[] next = neighbors.get(rand.nextInt(neighbors.size()));
                 int nx = next[0];
                 int nz = next[1];
 
-                // Carve wall between current and next
                 carveWall(level, origin, cx, cz, nx, nz);
-                // Carve next cell
                 carveCell(level, origin, nx, nz);
 
                 visited[nx][nz] = true;
@@ -80,9 +77,24 @@ public class TaskMaze implements BanishTask {
             }
         }
 
+        // Knock down extra walls between random adjacent cells to introduce
+        // loops. A perfect (spanning-tree) maze always has exactly one route
+        // between any two cells, which makes "always follow the right-hand
+        // wall" a guaranteed solve; loops break that guarantee.
+        int loopCount = (mazeW * mazeH) / 6;
+        for (int i = 0; i < loopCount; i++) {
+            int cx = rand.nextInt(mazeW);
+            int cz = rand.nextInt(mazeH);
+            int dir = rand.nextInt(4);
+            int nx = cx + (dir == 0 ? 1 : dir == 1 ? -1 : 0);
+            int nz = cz + (dir == 2 ? 1 : dir == 3 ? -1 : 0);
+            if (nx < 0 || nx >= mazeW || nz < 0 || nz >= mazeH) continue;
+            carveWall(level, origin, cx, cz, nx, nz);
+        }
+
         // Lighting along corridors
-        for (int cx = 0; cx < MAZE_W; cx++) {
-            for (int cz = 0; cz < MAZE_H; cz++) {
+        for (int cx = 0; cx < mazeW; cx++) {
+            for (int cz = 0; cz < mazeH; cz++) {
                 if ((cx + cz) % 3 == 0) {
                     int bx = 1 + cx * (CELL + 1);
                     int bz = 1 + cz * (CELL + 1);
@@ -92,8 +104,8 @@ public class TaskMaze implements BanishTask {
         }
 
         // Win button at the end cell (bottom-right)
-        int endX = 1 + (MAZE_W - 1) * (CELL + 1);
-        int endZ = 1 + (MAZE_H - 1) * (CELL + 1);
+        int endX = 1 + (mazeW - 1) * (CELL + 1);
+        int endZ = 1 + (mazeH - 1) * (CELL + 1);
         level.setBlock(origin.offset(endX, 0, endZ), Blocks.BEDROCK.defaultBlockState(), 3);
         level.setBlock(origin.offset(endX, 1, endZ), Blocks.POLISHED_BLACKSTONE_BUTTON.defaultBlockState(), 3);
 
@@ -103,7 +115,6 @@ public class TaskMaze implements BanishTask {
     private void carveCell(ServerLevel level, BlockPos origin, int cx, int cz) {
         int bx = 1 + cx * (CELL + 1);
         int bz = 1 + cz * (CELL + 1);
-        // Clear the cell interior
         for (int dx = 0; dx < CELL; dx++) {
             for (int dz = 0; dz < CELL; dz++) {
                 TaskUtils.fill(level, origin.offset(bx + dx, 0, bz + dz), origin.offset(bx + dx, 2, bz + dz), Blocks.AIR);
@@ -112,33 +123,25 @@ public class TaskMaze implements BanishTask {
     }
 
     private void carveWall(ServerLevel level, BlockPos origin, int cx1, int cz1, int cx2, int cz2) {
-        // Wall position is between the two cells
         int wallX, wallZ;
         if (cx2 > cx1) {
-            // Wall to the right of cell 1
             wallX = 1 + cx1 * (CELL + 1) + CELL;
             wallZ = 1 + cz1 * (CELL + 1);
         } else if (cx2 < cx1) {
-            // Wall to the left of cell 1
             wallX = 1 + cx2 * (CELL + 1) + CELL;
             wallZ = 1 + cz2 * (CELL + 1);
         } else if (cz2 > cz1) {
-            // Wall below cell 1
             wallX = 1 + cx1 * (CELL + 1);
             wallZ = 1 + cz1 * (CELL + 1) + CELL;
         } else {
-            // Wall above cell 1
             wallX = 1 + cx2 * (CELL + 1);
             wallZ = 1 + cz2 * (CELL + 1) + CELL;
         }
 
-        // Carve opening in the wall (CELL blocks wide)
         for (int d = 0; d < CELL; d++) {
             if (cx1 != cx2) {
-                // Horizontal wall — carve along Z
                 TaskUtils.fill(level, origin.offset(wallX, 0, wallZ + d), origin.offset(wallX, 2, wallZ + d), Blocks.AIR);
             } else {
-                // Vertical wall — carve along X
                 TaskUtils.fill(level, origin.offset(wallX + d, 0, wallZ), origin.offset(wallX + d, 2, wallZ), Blocks.AIR);
             }
         }
@@ -146,12 +149,11 @@ public class TaskMaze implements BanishTask {
 
     @Override
     public boolean isWinCondition(ServerLevel level, BlockPos interactedBlock, BlockPos origin) {
-        return level.getBlockState(interactedBlock).is(Blocks.POLISHED_BLACKSTONE_BUTTON) && interactedBlock.distSqr(origin) < 5000;
+        return level.getBlockState(interactedBlock).is(Blocks.POLISHED_BLACKSTONE_BUTTON) && interactedBlock.distSqr(origin) < 6000;
     }
 
     @Override
     public void tick(ServerPlayer player, BlockPos origin) {
-        // Origin-relative void check
         if (player.getY() < origin.getY() - 5) {
             Vec3 spawn = getSpawnPos(origin);
             player.teleportTo(spawn.x, spawn.y, spawn.z);
@@ -160,7 +162,6 @@ public class TaskMaze implements BanishTask {
 
     @Override
     public Vec3 getSpawnPos(BlockPos origin) {
-        // Spawn in the first cell (top-left)
         return new Vec3(origin.getX() + 1.5, origin.getY() + 0.1, origin.getZ() + 1.5);
     }
 }

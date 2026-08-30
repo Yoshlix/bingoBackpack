@@ -174,7 +174,7 @@ public class TimeoutPlayer extends BingoItem {
      * whether the freeze came from this item or from {@link TimeoutTeam} —
      * shared here so a future fix only has to happen in one place.
      */
-    static void applyTimeout(ServerPlayer target, int durationSeconds) {
+    public static void applyTimeout(ServerPlayer target, int durationSeconds) {
         int durationTicks = durationSeconds * 20;
 
         target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, durationTicks, 255, false, false, true));

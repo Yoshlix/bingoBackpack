@@ -7,10 +7,18 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+import de.yoshlix.bingobackpack.bingo.BingoBridge;
+import de.yoshlix.bingobackpack.bounty.BountyDefinition;
+import de.yoshlix.bingobackpack.bounty.BountyManager;
+import de.yoshlix.bingobackpack.bounty.BountyRegistry;
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.BingoItemManager;
 import de.yoshlix.bingobackpack.item.BingoItemRegistry;
 import de.yoshlix.bingobackpack.item.ItemRarity;
+import de.yoshlix.bingobackpack.momentum.MomentumAbility;
+import de.yoshlix.bingobackpack.momentum.MomentumAbilityRegistry;
+import de.yoshlix.bingobackpack.momentum.MomentumManager;
+import me.jfenn.bingo.api.data.IBingoTeam;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
@@ -161,7 +169,42 @@ public class BackpackCommand {
                 .then(Commands.literal("discord")
                         .then(Commands.literal("link")
                                 .then(Commands.argument("userId", StringArgumentType.string())
-                                        .executes(BackpackCommand::linkDiscord)))));
+                                        .executes(BackpackCommand::linkDiscord))))
+
+                // Bounty-Board commands
+                .then(Commands.literal("bounty")
+                        .then(Commands.literal("info")
+                                .executes(BackpackCommand::bountyInfo))
+                        .then(Commands.literal("list")
+                                .requires(source -> Commands.hasPermission(Commands.LEVEL_GAMEMASTERS).test(source))
+                                .executes(BackpackCommand::bountyList))
+                        .then(Commands.literal("force")
+                                .requires(source -> Commands.hasPermission(Commands.LEVEL_GAMEMASTERS).test(source))
+                                .then(Commands.argument("id", StringArgumentType.word())
+                                        .suggests(BackpackCommand::suggestBounties)
+                                        .executes(BackpackCommand::bountyForce)))
+                        .then(Commands.literal("on")
+                                .requires(source -> Commands.hasPermission(Commands.LEVEL_GAMEMASTERS).test(source))
+                                .executes(ctx -> toggleConfig(ctx, "bounty", true)))
+                        .then(Commands.literal("off")
+                                .requires(source -> Commands.hasPermission(Commands.LEVEL_GAMEMASTERS).test(source))
+                                .executes(ctx -> toggleConfig(ctx, "bounty", false))))
+
+                // Momentum-Leiste commands
+                .then(Commands.literal("momentum")
+                        .then(Commands.literal("status")
+                                .executes(BackpackCommand::momentumStatus))
+                        .then(Commands.literal("list")
+                                .executes(BackpackCommand::momentumList))
+                        .then(Commands.literal("activate")
+                                .executes(BackpackCommand::momentumActivate))
+                        .then(Commands.literal("force")
+                                .requires(source -> Commands.hasPermission(Commands.LEVEL_GAMEMASTERS).test(source))
+                                .then(Commands.argument("team", StringArgumentType.word())
+                                        .suggests(BackpackCommand::suggestTeams)
+                                        .then(Commands.argument("ability", StringArgumentType.word())
+                                                .suggests(BackpackCommand::suggestMomentumAbilities)
+                                                .executes(BackpackCommand::momentumForce))))));
 
     }
 
@@ -180,6 +223,26 @@ public class BackpackCommand {
         for (ItemRarity rarity : ItemRarity.values()) {
             if (rarity.name().toLowerCase().startsWith(builder.getRemainingLowerCase())) {
                 builder.suggest(rarity.name().toLowerCase());
+            }
+        }
+        return builder.buildFuture();
+    }
+
+    private static CompletableFuture<Suggestions> suggestBounties(CommandContext<CommandSourceStack> context,
+            SuggestionsBuilder builder) {
+        for (BountyDefinition def : BountyRegistry.getAll()) {
+            if (def.getId().toLowerCase().startsWith(builder.getRemainingLowerCase())) {
+                builder.suggest(def.getId());
+            }
+        }
+        return builder.buildFuture();
+    }
+
+    private static CompletableFuture<Suggestions> suggestMomentumAbilities(CommandContext<CommandSourceStack> context,
+            SuggestionsBuilder builder) {
+        for (MomentumAbility ability : MomentumAbilityRegistry.getAll()) {
+            if (ability.getId().toLowerCase().startsWith(builder.getRemainingLowerCase())) {
+                builder.suggest(ability.getId());
             }
         }
         return builder.buildFuture();
@@ -445,6 +508,9 @@ public class BackpackCommand {
             case "lobbylevitation":
                 config.lobbyDisableLevitationPotions = value;
                 break;
+            case "bounty":
+                config.bountyBoardEnabled = value;
+                break;
             default:
                 ctx.getSource().sendFailure(Component.literal("Unknown config flag: " + configName));
                 return 0;
@@ -568,5 +634,95 @@ public class BackpackCommand {
                     "§cInvalid Discord ID! It must be a numeric ID (enable Developer Mode in Discord to see it)."));
             return 0;
         }
+    }
+
+    private static int bountyInfo(CommandContext<CommandSourceStack> ctx) {
+        BountyDefinition active = BountyManager.getInstance().getActive();
+        if (active == null) {
+            ctx.getSource().sendSuccess(() -> Component.literal("§7Keine aktive Bounty."), false);
+            return 1;
+        }
+
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "§6⚑ Aktive Bounty: §e" + active.getName() + " §7(" + active.getTier().getDisplayName() + ")\n"
+                        + "§7" + active.getDescription()),
+                false);
+        return 1;
+    }
+
+    private static int bountyList(CommandContext<CommandSourceStack> ctx) {
+        StringBuilder sb = new StringBuilder("§6Bounty-Katalog:\n");
+        for (BountyDefinition def : BountyRegistry.getAll()) {
+            sb.append("§7- ").append(def.getTier().getColorCode()).append(def.getName())
+                    .append(" §8(").append(def.getId()).append(") §7— ").append(def.getDescription()).append("\n");
+        }
+        ctx.getSource().sendSuccess(() -> Component.literal(sb.toString()), false);
+        return 1;
+    }
+
+    private static int bountyForce(CommandContext<CommandSourceStack> ctx) {
+        String id = StringArgumentType.getString(ctx, "id");
+        if (BountyManager.getInstance().forceBounty(id)) {
+            ctx.getSource().sendSuccess(() -> Component.literal("§aBounty '" + id + "' erzwungen."), true);
+            return 1;
+        }
+        ctx.getSource().sendFailure(Component.literal("§cUnbekannte Bounty: " + id));
+        return 0;
+    }
+
+    private static int momentumStatus(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        IBingoTeam team = BingoBridge.getTeamForPlayer(player.getUUID());
+        if (team == null) {
+            ctx.getSource().sendFailure(Component.literal("§cDu bist in keinem Team!"));
+            return 0;
+        }
+
+        MomentumAbility ready = MomentumManager.getInstance().getReady(team.getId());
+        double charge = MomentumManager.getInstance().getCharge(team.getId());
+
+        if (ready != null) {
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                    "§d✦ Momentum bereit: §e" + ready.getName() + " §7— " + ready.getDescription()
+                            + "\n§7Aktivieren mit §e/backpack momentum activate"),
+                    false);
+        } else {
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                    "§dMomentum-Ladung: §e" + (int) charge + "/100"), false);
+        }
+        return 1;
+    }
+
+    private static int momentumList(CommandContext<CommandSourceStack> ctx) {
+        StringBuilder sb = new StringBuilder("§dMomentum-Fähigkeiten:\n");
+        for (MomentumAbility ability : MomentumAbilityRegistry.getAll()) {
+            sb.append(ability.isHarmful() ? "§c- " : "§a- ").append(ability.getName())
+                    .append(" §8(").append(ability.getId()).append(") §7— ").append(ability.getDescription())
+                    .append("\n");
+        }
+        ctx.getSource().sendSuccess(() -> Component.literal(sb.toString()), false);
+        return 1;
+    }
+
+    private static int momentumActivate(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        if (MomentumManager.getInstance().tryActivate(player)) {
+            ctx.getSource().sendSuccess(() -> Component.literal("§aMomentum-Fähigkeit aktiviert!"), true);
+            return 1;
+        }
+        ctx.getSource().sendFailure(Component.literal("§cKeine Momentum-Fähigkeit bereit (oder kein Team)."));
+        return 0;
+    }
+
+    private static int momentumForce(CommandContext<CommandSourceStack> ctx) {
+        String teamId = StringArgumentType.getString(ctx, "team");
+        String abilityId = StringArgumentType.getString(ctx, "ability");
+        if (MomentumManager.getInstance().forceReady(teamId, abilityId)) {
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                    "§aTeam '" + teamId + "' hat jetzt '" + abilityId + "' bereit."), true);
+            return 1;
+        }
+        ctx.getSource().sendFailure(Component.literal("§cUnbekannte Fähigkeit: " + abilityId));
+        return 0;
     }
 }

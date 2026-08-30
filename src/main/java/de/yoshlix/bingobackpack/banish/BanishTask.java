@@ -20,6 +20,14 @@ public interface BanishTask {
     String getTaskDescription();
 
     /**
+     * Short name used in status broadcasts (e.g. "Parkour"). Defaults to the
+     * class name with the "Task" prefix stripped.
+     */
+    default String getDisplayName() {
+        return getClass().getSimpleName().replaceFirst("^Task", "");
+    }
+
+    /**
      * Check if the player has won (e.g. they pressed the win button).
      * This is called when the player interacts with a block.
      */

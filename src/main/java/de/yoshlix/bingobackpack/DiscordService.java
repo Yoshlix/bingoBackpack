@@ -16,6 +16,17 @@ public class DiscordService {
     private static final Gson GSON = new GsonBuilder().create();
     private static final String API_URL = "http://localhost:8081/api/v1";
     private final HttpClient httpClient;
+    // Dedicated executor for the retry loop below, which blocks its thread
+    // with Thread.sleep() between attempts. Running that on the shared
+    // ForkJoinPool.commonPool() (CompletableFuture.runAsync()'s default)
+    // meant a slow/unreachable Discord service could tie up pool threads
+    // other unrelated code on the server also relies on.
+    private final java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors
+            .newSingleThreadExecutor(r -> {
+                Thread t = new Thread(r, "discord-service-client");
+                t.setDaemon(true);
+                return t;
+            });
 
     public static DiscordService getInstance() {
         if (instance == null) {
@@ -117,6 +128,12 @@ public class DiscordService {
                         BingoBackpack.LOGGER.error("Discord Service Error {}: {} (Attempt {}/{})",
                                 response.statusCode(), response.body(), attempt, maxRetries);
                         lastException = new RuntimeException("HTTP Status: " + response.statusCode());
+                        // 4xx means the request itself was rejected (bad payload, unknown
+                        // route, ...) - retrying the exact same request can't change that,
+                        // it only delays the failure message by up to 6 extra seconds.
+                        if (response.statusCode() < 500) {
+                            break;
+                        }
                         Thread.sleep(backoff * attempt); // Exponentielles Backoff
                     } else {
                         if (attempt > 1) {
@@ -140,7 +157,7 @@ public class DiscordService {
                         "Discord Service Call {} fehlgeschlagen nach {} Versuchen! Letzter Fehler: {}", endpoint,
                         maxRetries, lastException != null ? lastException.getMessage() : "unbekannt");
             }
-        });
+        }, executor);
     }
 
     // Payload-Klassen entfernt, da sie nicht benötigt werden

@@ -4,6 +4,7 @@ import de.yoshlix.bingobackpack.bingo.BingoBridge;
 import de.yoshlix.bingobackpack.item.BingoItem;
 import de.yoshlix.bingobackpack.item.ItemRarity;
 import de.yoshlix.bingobackpack.ModConfig;
+import me.jfenn.bingo.api.data.IBingoTeam;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -59,41 +60,55 @@ public class TeamShield extends BingoItem {
             return false;
         }
 
-        // Activate shield
-        long expiryTime = System.currentTimeMillis() + (ModConfig.getInstance().teamShieldDurationSeconds * 1000L);
-        shieldedTeams.put(teamId, expiryTime);
-
-        // Notify all team members
         var server = ((ServerLevel) player.level()).getServer();
-        for (UUID memberId : playerTeam.getPlayers()) {
-            ServerPlayer member = server.getPlayerList().getPlayer(memberId);
-            if (member != null) {
-                member.sendSystemMessage(Component.literal("§a§l🛡 TEAM SCHILD AKTIVIERT! 🛡"));
-                member.sendSystemMessage(Component
-                        .literal("§7Euer Team ist für §e" + ModConfig.getInstance().teamShieldDurationSeconds
-                                + " Sekunden §7geschützt!"));
-                member.sendSystemMessage(Component.literal("§7Aktiviert von: §e" + player.getName().getString()));
+        activateShield(teamId, server, ModConfig.getInstance().teamShieldDurationSeconds * 1000L, player);
+        return true;
+    }
+
+    /**
+     * Activates the team shield directly, bypassing the item/inventory flow.
+     * Used by the item's own {@link #onUse} above and reused by the Momentum
+     * "Bollwerk" ability, which grants the same shield for a longer duration
+     * as an earned reward instead of an item pickup — both share this one
+     * {@code shieldedTeams} map, so every existing shield check keeps working
+     * no matter which path activated it.
+     */
+    public static void activateShield(String teamId, MinecraftServer server, long durationMs,
+            ServerPlayer activatedBy) {
+        long expiryTime = System.currentTimeMillis() + durationMs;
+        shieldedTeams.put(teamId, expiryTime);
+        int durationSeconds = (int) (durationMs / 1000L);
+
+        var teams = BingoBridge.getAllTeams();
+        IBingoTeam team = null;
+        for (var t : teams) {
+            if (t.getId().equals(teamId)) {
+                team = t;
+                break;
             }
         }
 
-        // Broadcast to server
+        if (team != null) {
+            for (UUID memberId : team.getPlayers()) {
+                ServerPlayer member = server.getPlayerList().getPlayer(memberId);
+                if (member != null) {
+                    member.sendSystemMessage(Component.literal("§a§l🛡 TEAM SCHILD AKTIVIERT! 🛡"));
+                    member.sendSystemMessage(Component
+                            .literal("§7Euer Team ist für §e" + durationSeconds + " Sekunden §7geschützt!"));
+                    member.sendSystemMessage(
+                            Component.literal("§7Aktiviert von: §e" + activatedBy.getName().getString()));
+                    member.level().playSound(null, member.getX(), member.getY(), member.getZ(),
+                            net.minecraft.sounds.SoundEvents.ENCHANTMENT_TABLE_USE,
+                            net.minecraft.sounds.SoundSource.PLAYERS,
+                            1.0f, 1.5f);
+                }
+            }
+        }
+
         server.getPlayerList().broadcastSystemMessage(
                 Component.literal("§a§l🛡 §eTeam " + teamId + " §ahat einen Schild aktiviert! §7("
-                        + ModConfig.getInstance().teamShieldDurationSeconds + "s)"),
+                        + durationSeconds + "s)"),
                 false);
-
-        // Play shield sound to all team members
-        for (UUID memberId : playerTeam.getPlayers()) {
-            ServerPlayer member = server.getPlayerList().getPlayer(memberId);
-            if (member != null) {
-                member.level().playSound(null, member.getX(), member.getY(), member.getZ(),
-                        net.minecraft.sounds.SoundEvents.ENCHANTMENT_TABLE_USE,
-                        net.minecraft.sounds.SoundSource.PLAYERS,
-                        1.0f, 1.5f);
-            }
-        }
-
-        return true;
     }
 
     /**

@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import de.yoshlix.bingobackpack.BingoBackpack;
+import de.yoshlix.bingobackpack.ModConfig;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
@@ -112,11 +113,44 @@ public class BanishManager {
                 if (player != null) {
                     BanishData data = banished.get(uuid);
                     if (data == null) continue;
+                    data.elapsedSeconds++;
                     BlockPos origin = new BlockPos(data.originX, data.originY, data.originZ);
                     tasks.get(data.taskIndex).tick(player, origin);
                 }
             }
+
+            maybeBroadcastStatus(srv, uuids);
         });
+    }
+
+    private int secondsSinceLastBroadcast = 0;
+
+    /** Periodic server-wide "who's still stuck where" message, gated by config. */
+    private void maybeBroadcastStatus(MinecraftServer server, List<UUID> currentlyBanished) {
+        if (!ModConfig.getInstance().banishStatusBroadcastEnabled || currentlyBanished.isEmpty()) {
+            secondsSinceLastBroadcast = 0;
+            return;
+        }
+
+        secondsSinceLastBroadcast++;
+        int interval = Math.max(5, ModConfig.getInstance().banishStatusBroadcastIntervalSeconds);
+        if (secondsSinceLastBroadcast < interval) {
+            return;
+        }
+        secondsSinceLastBroadcast = 0;
+
+        for (UUID uuid : currentlyBanished) {
+            BanishData data = banished.get(uuid);
+            if (data == null) continue;
+            ServerPlayer player = server.getPlayerList().getPlayer(uuid);
+            if (player == null) continue;
+            BanishTask task = tasks.get(data.taskIndex);
+            server.getPlayerList().broadcastSystemMessage(
+                    Component.literal("§5[Banish] §f" + player.getName().getString()
+                            + " §7hängt seit §e" + data.elapsedSeconds + "s §7in §f'" + task.getDisplayName()
+                            + "' §7fest."),
+                    false);
+        }
     }
 
     public boolean isBanished(ServerPlayer player) {
@@ -179,6 +213,14 @@ public class BanishManager {
     }
 
     public void unbanish(ServerPlayer player) {
+        // Only the successful-escape path earns Momentum charge, not the
+        // admin clearBanish() path below.
+        var team = de.yoshlix.bingobackpack.bingo.BingoBridge.getTeamForPlayer(player.getUUID());
+        if (team != null) {
+            de.yoshlix.bingobackpack.momentum.MomentumManager.getInstance().addCharge(team.getId(),
+                    ModConfig.getInstance().momentumChargePerBanishEscape);
+        }
+
         unbanish(player,
                 Component.literal("§aDu hast die Aufgabe bestanden und bist entkommen!"),
                 Component.literal("§cOriginal-Dimension nicht gefunden. Zum Spawn teleportiert."));

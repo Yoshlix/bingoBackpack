@@ -4,6 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 
@@ -17,10 +18,10 @@ public class TaskEscapeRoom implements BanishTask {
 
     @Override
     public Vec3 generate(ServerLevel level, BlockPos origin) {
-        Random rand = new Random(origin.asLong() + System.currentTimeMillis() / 60000);
+        Random rand = TaskUtils.randomFor(origin);
         int variant = rand.nextInt(5);
 
-        // Clear and build base room
+        // Clear and build base room (variants that need more space clear extra themselves)
         TaskUtils.fill(level, origin.offset(-12, -3, -12), origin.offset(12, 10, 12), Blocks.AIR);
 
         switch (variant) {
@@ -39,15 +40,12 @@ public class TaskEscapeRoom implements BanishTask {
      * Sometimes logs, sometimes cobblestone. Crafting table hidden or visible.
      */
     private void generateCraftingPuzzle(ServerLevel level, BlockPos origin, Random rand) {
-        // Random room size
         int size = 3 + rand.nextInt(3); // 3 to 5
         TaskUtils.hollowBox(level, origin.offset(-size, -1, -size), origin.offset(size, 5, size), Blocks.BEDROCK, Blocks.AIR);
         level.setBlock(origin.offset(0, 4, 0), Blocks.GLOWSTONE.defaultBlockState(), 3);
 
-        // Randomly choose material set
         boolean useStone = rand.nextBoolean();
         if (useStone) {
-            // Cobblestone blocks — player breaks them, crafts stone button
             int count = 2 + rand.nextInt(3);
             for (int i = 0; i < count; i++) {
                 int rx = rand.nextInt(size * 2 - 1) - (size - 1);
@@ -55,7 +53,6 @@ public class TaskEscapeRoom implements BanishTask {
                 level.setBlock(origin.offset(rx, 0, rz), Blocks.COBBLESTONE.defaultBlockState(), 3);
             }
         } else {
-            // Oak logs — player breaks them, crafts planks, then button
             int count = 1 + rand.nextInt(2);
             for (int i = 0; i < count; i++) {
                 int rx = rand.nextInt(size * 2 - 1) - (size - 1);
@@ -64,127 +61,169 @@ public class TaskEscapeRoom implements BanishTask {
             }
         }
 
-        // Crafting table at random position
         int ctx = rand.nextInt(size * 2 - 1) - (size - 1);
         int ctz = rand.nextInt(size * 2 - 1) - (size - 1);
         level.setBlock(origin.offset(ctx, 0, ctz), Blocks.CRAFTING_TABLE.defaultBlockState(), 3);
     }
 
     /**
-     * Variant 1: Room with hidden button behind breakable walls.
+     * Variant 1: Room with a hidden button behind breakable walls. Material
+     * and wall thickness vary per instance so "punch three times and you're
+     * through" isn't a guaranteed strategy.
      */
     private void generateHiddenButtonRoom(ServerLevel level, BlockPos origin, Random rand) {
         TaskUtils.hollowBox(level, origin.offset(-5, -1, -5), origin.offset(5, 5, 5), Blocks.BEDROCK, Blocks.AIR);
         level.setBlock(origin.offset(0, 4, 0), Blocks.SEA_LANTERN.defaultBlockState(), 3);
 
-        // Build internal walls from breakable material
+        Block[] wallMaterials = {Blocks.OAK_PLANKS, Blocks.SPRUCE_PLANKS, Blocks.BIRCH_PLANKS, Blocks.MANGROVE_PLANKS};
+        Block wallMat = wallMaterials[rand.nextInt(wallMaterials.length)];
+        boolean thick = rand.nextBoolean();
+
         for (int x = -4; x <= 4; x++) {
             for (int z = -4; z <= 4; z++) {
                 if ((x == -2 || x == 2) && rand.nextInt(3) != 0) {
-                    TaskUtils.fill(level, origin.offset(x, 0, z), origin.offset(x, 2, z), Blocks.OAK_PLANKS);
+                    TaskUtils.fill(level, origin.offset(x, 0, z), origin.offset(x, 2, z), wallMat);
+                    if (thick) {
+                        int outer = x + (x < 0 ? -1 : 1);
+                        TaskUtils.fill(level, origin.offset(outer, 0, z), origin.offset(outer, 2, z), wallMat);
+                    }
                 }
                 if ((z == -2 || z == 2) && rand.nextInt(3) != 0) {
-                    TaskUtils.fill(level, origin.offset(x, 0, z), origin.offset(x, 2, z), Blocks.OAK_PLANKS);
+                    TaskUtils.fill(level, origin.offset(x, 0, z), origin.offset(x, 2, z), wallMat);
+                    if (thick) {
+                        int outer = z + (z < 0 ? -1 : 1);
+                        TaskUtils.fill(level, origin.offset(x, 0, outer), origin.offset(x, 2, outer), wallMat);
+                    }
                 }
             }
         }
 
-        // Hidden button behind one of the walls
         int bx = rand.nextBoolean() ? (rand.nextBoolean() ? -4 : 4) : (rand.nextInt(7) - 3);
         int bz = rand.nextBoolean() ? (rand.nextBoolean() ? -4 : 4) : (rand.nextInt(7) - 3);
         level.setBlock(origin.offset(bx, 0, bz), Blocks.AIR.defaultBlockState(), 3);
         level.setBlock(origin.offset(bx, 1, bz), Blocks.POLISHED_BLACKSTONE_BUTTON.defaultBlockState(), 3);
 
-        // Some decoy items
         level.setBlock(origin.offset(-3, 0, 3), Blocks.CHEST.defaultBlockState(), 3);
         level.setBlock(origin.offset(3, 0, -3), Blocks.BARREL.defaultBlockState(), 3);
     }
 
     /**
-     * Variant 2: Multiple connected rooms — button is in the last one.
+     * Variant 2: A chain of 2-4 rooms in a randomized direction sequence
+     * (not always the same fixed L-shape) — button is in the last one.
      */
     private void generateMultiRoomPuzzle(ServerLevel level, BlockPos origin, Random rand) {
-        // Room 1 (spawn room)
-        TaskUtils.hollowBox(level, origin.offset(-3, -1, -3), origin.offset(3, 5, 3), Blocks.BEDROCK, Blocks.AIR);
-        level.setBlock(origin.offset(0, 4, 0), Blocks.GLOWSTONE.defaultBlockState(), 3);
+        int roomCount = 2 + rand.nextInt(3); // 2-4 rooms
+        int roomSize = 3;
+        int step = roomSize * 2 + 4;
 
-        // Room 2 (connected via breakable wall)
-        TaskUtils.hollowBox(level, origin.offset(4, -1, -3), origin.offset(10, 5, 3), Blocks.BEDROCK, Blocks.AIR);
-        level.setBlock(origin.offset(7, 4, 0), Blocks.SEA_LANTERN.defaultBlockState(), 3);
-        // Breakable connection
-        TaskUtils.fill(level, origin.offset(3, 0, -1), origin.offset(3, 2, 1), Blocks.OAK_PLANKS);
+        // Extra clearing for longer/redirected chains beyond the shared -12..12 box
+        TaskUtils.fill(level, origin.offset(-14, -3, -14), origin.offset(14 + roomCount * step, 10, 14 + roomCount * step), Blocks.AIR);
+        TaskUtils.fill(level, origin.offset(-14 - roomCount * step, -3, -14 - roomCount * step), origin.offset(14, 10, 14), Blocks.AIR);
 
-        // Room 3 (connected from room 2, different direction)
-        TaskUtils.hollowBox(level, origin.offset(4, -1, 4), origin.offset(10, 5, 10), Blocks.BEDROCK, Blocks.AIR);
-        level.setBlock(origin.offset(7, 4, 7), Blocks.GLOWSTONE.defaultBlockState(), 3);
-        // Breakable connection
-        TaskUtils.fill(level, origin.offset(5, 0, 3), origin.offset(8, 2, 3), Blocks.SPRUCE_PLANKS);
+        BlockPos[] centers = new BlockPos[roomCount];
+        centers[0] = origin;
+        for (int i = 1; i < roomCount; i++) {
+            int dir = rand.nextInt(4); // 0=+X, 1=-X, 2=+Z, 3=-Z
+            int dx = (dir == 0) ? step : (dir == 1) ? -step : 0;
+            int dz = (dir == 2) ? step : (dir == 3) ? -step : 0;
+            centers[i] = centers[i - 1].offset(dx, 0, dz);
+        }
 
-        // Place crafting table and wood in room 2
-        level.setBlock(origin.offset(5, 0, 0), Blocks.CRAFTING_TABLE.defaultBlockState(), 3);
-        level.setBlock(origin.offset(6, 0, 1), Blocks.OAK_LOG.defaultBlockState(), 3);
-        level.setBlock(origin.offset(8, 0, -1), Blocks.COBBLESTONE.defaultBlockState(), 3);
+        Block[] wallMaterials = {Blocks.OAK_PLANKS, Blocks.SPRUCE_PLANKS};
 
-        // Win button in room 3
-        int bx = 5 + rand.nextInt(4);
-        int bz = 5 + rand.nextInt(4);
-        level.setBlock(origin.offset(bx, 0, bz), Blocks.BEDROCK.defaultBlockState(), 3);
-        level.setBlock(origin.offset(bx, 1, bz), Blocks.POLISHED_BLACKSTONE_BUTTON.defaultBlockState(), 3);
+        for (int i = 0; i < roomCount; i++) {
+            TaskUtils.hollowBox(level, centers[i].offset(-roomSize, -1, -roomSize),
+                    centers[i].offset(roomSize, 5, roomSize), Blocks.BEDROCK, Blocks.AIR);
+            level.setBlock(centers[i].offset(0, 4, 0),
+                    (i % 2 == 0) ? Blocks.GLOWSTONE.defaultBlockState() : Blocks.SEA_LANTERN.defaultBlockState(), 3);
+        }
+
+        // Punch a breakable connection through both facing walls for each hop
+        for (int i = 0; i < roomCount - 1; i++) {
+            BlockPos a = centers[i];
+            BlockPos b = centers[i + 1];
+            Block wallMat = wallMaterials[rand.nextInt(wallMaterials.length)];
+            int dx = Integer.signum(b.getX() - a.getX());
+            int dz = Integer.signum(b.getZ() - a.getZ());
+            if (dx != 0) {
+                int wallXa = a.getX() + dx * roomSize;
+                int wallXb = b.getX() - dx * roomSize;
+                TaskUtils.fill(level, new BlockPos(wallXa, a.getY(), a.getZ() - 1), new BlockPos(wallXa, a.getY() + 2, a.getZ() + 1), wallMat);
+                TaskUtils.fill(level, new BlockPos(wallXb, b.getY(), b.getZ() - 1), new BlockPos(wallXb, b.getY() + 2, b.getZ() + 1), wallMat);
+            } else {
+                int wallZa = a.getZ() + dz * roomSize;
+                int wallZb = b.getZ() - dz * roomSize;
+                TaskUtils.fill(level, new BlockPos(a.getX() - 1, a.getY(), wallZa), new BlockPos(a.getX() + 1, a.getY() + 2, wallZa), wallMat);
+                TaskUtils.fill(level, new BlockPos(b.getX() - 1, b.getY(), wallZb), new BlockPos(b.getX() + 1, b.getY() + 2, wallZb), wallMat);
+            }
+        }
+
+        // Crafting supplies in the second-to-last room
+        BlockPos craftRoom = centers[Math.max(0, roomCount - 2)];
+        level.setBlock(craftRoom.offset(-1, 0, 0), Blocks.CRAFTING_TABLE.defaultBlockState(), 3);
+        level.setBlock(craftRoom.offset(1, 0, 1), Blocks.OAK_LOG.defaultBlockState(), 3);
+        level.setBlock(craftRoom.offset(1, 0, -1), Blocks.COBBLESTONE.defaultBlockState(), 3);
+
+        // Win button in the last room
+        BlockPos finalRoom = centers[roomCount - 1];
+        int bx = rand.nextInt(roomSize * 2 - 1) - (roomSize - 1);
+        int bz = rand.nextInt(roomSize * 2 - 1) - (roomSize - 1);
+        level.setBlock(finalRoom.offset(bx, 0, bz), Blocks.BEDROCK.defaultBlockState(), 3);
+        level.setBlock(finalRoom.offset(bx, 1, bz), Blocks.POLISHED_BLACKSTONE_BUTTON.defaultBlockState(), 3);
     }
 
     /**
-     * Variant 3: Must pillar up using blocks to reach a button on the ceiling.
+     * Variant 3: Must pillar up using blocks to reach a button. Ceiling
+     * height and available material count vary per instance.
      */
     private void generatePillarPuzzle(ServerLevel level, BlockPos origin, Random rand) {
-        // Tall room
-        TaskUtils.hollowBox(level, origin.offset(-4, -1, -4), origin.offset(4, 8, 4), Blocks.BEDROCK, Blocks.AIR);
-        level.setBlock(origin.offset(0, 7, 0), Blocks.GLOWSTONE.defaultBlockState(), 3);
+        int height = 6 + rand.nextInt(3); // 6-8
+        TaskUtils.hollowBox(level, origin.offset(-4, -1, -4), origin.offset(4, height, 4), Blocks.BEDROCK, Blocks.AIR);
+        level.setBlock(origin.offset(0, height - 1, 0), Blocks.GLOWSTONE.defaultBlockState(), 3);
 
-        // Some blocks scattered to pillar up with
-        for (int i = 0; i < 8; i++) {
+        int cobbleCount = 6 + rand.nextInt(5);
+        for (int i = 0; i < cobbleCount; i++) {
             int rx = rand.nextInt(7) - 3;
             int rz = rand.nextInt(7) - 3;
             level.setBlock(origin.offset(rx, 0, rz), Blocks.COBBLESTONE.defaultBlockState(), 3);
         }
 
-        // Additional dirt blocks
-        for (int i = 0; i < 6; i++) {
+        int dirtCount = 4 + rand.nextInt(4);
+        for (int i = 0; i < dirtCount; i++) {
             int rx = rand.nextInt(7) - 3;
             int rz = rand.nextInt(7) - 3;
             level.setBlock(origin.offset(rx, 0, rz), Blocks.DIRT.defaultBlockState(), 3);
         }
 
-        // Button high up on a wall
         int side = rand.nextInt(4);
         BlockPos buttonPos = switch (side) {
-            case 0 -> origin.offset(rand.nextInt(5) - 2, 6, -3);
-            case 1 -> origin.offset(rand.nextInt(5) - 2, 6, 3);
-            case 2 -> origin.offset(-3, 6, rand.nextInt(5) - 2);
-            default -> origin.offset(3, 6, rand.nextInt(5) - 2);
+            case 0 -> origin.offset(rand.nextInt(5) - 2, height - 2, -3);
+            case 1 -> origin.offset(rand.nextInt(5) - 2, height - 2, 3);
+            case 2 -> origin.offset(-3, height - 2, rand.nextInt(5) - 2);
+            default -> origin.offset(3, height - 2, rand.nextInt(5) - 2);
         };
         level.setBlock(buttonPos, Blocks.POLISHED_BLACKSTONE_BUTTON.defaultBlockState(), 3);
     }
 
     /**
-     * Variant 4: Dark, twisty corridors — find the button by feel.
+     * Variant 4: Dark, twisty corridors — find the button by feel. Room size
+     * varies per instance.
      */
     private void generateDarkMazePuzzle(ServerLevel level, BlockPos origin, Random rand) {
-        // No light at all
-        TaskUtils.hollowBox(level, origin.offset(-6, -1, -6), origin.offset(6, 4, 6), Blocks.BEDROCK, Blocks.AIR);
+        int half = 5 + rand.nextInt(3); // 5-7
+        TaskUtils.hollowBox(level, origin.offset(-half, -1, -half), origin.offset(half, 4, half), Blocks.BEDROCK, Blocks.AIR);
 
-        // Internal walls creating corridors
-        for (int x = -5; x <= 5; x += 2) {
+        for (int x = -half + 1; x <= half - 1; x += 2) {
             boolean open = rand.nextBoolean();
-            int gapZ = rand.nextInt(9) - 4;
-            for (int z = -5; z <= 5; z++) {
+            int gapZ = rand.nextInt(half * 2 - 1) - (half - 1);
+            for (int z = -half + 1; z <= half - 1; z++) {
                 if (z == gapZ || (open && rand.nextInt(4) == 0)) continue;
                 TaskUtils.fill(level, origin.offset(x, 0, z), origin.offset(x, 2, z), Blocks.BLACKSTONE);
             }
         }
 
-        // Button somewhere in the maze
-        int bx = rand.nextInt(9) - 4;
-        int bz = rand.nextInt(9) - 4;
+        int bx = rand.nextInt(half * 2 - 1) - (half - 1);
+        int bz = rand.nextInt(half * 2 - 1) - (half - 1);
         level.setBlock(origin.offset(bx, 0, bz), Blocks.AIR.defaultBlockState(), 3);
         level.setBlock(origin.offset(bx, 1, bz), Blocks.POLISHED_BLACKSTONE_BUTTON.defaultBlockState(), 3);
 
@@ -197,7 +236,7 @@ public class TaskEscapeRoom implements BanishTask {
         // Accept both wooden buttons (crafted) and polished blackstone buttons (pre-placed)
         boolean isButton = level.getBlockState(interactedBlock).is(BlockTags.WOODEN_BUTTONS)
                 || level.getBlockState(interactedBlock).is(Blocks.POLISHED_BLACKSTONE_BUTTON);
-        return isButton && interactedBlock.distSqr(origin) < 600;
+        return isButton && interactedBlock.distSqr(origin) < 5000;
     }
 
     @Override

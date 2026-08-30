@@ -13,6 +13,8 @@ public class BanishData {
     public int taskIndex;
     public double taskSpawnX, taskSpawnY, taskSpawnZ;
     public int taskTime = 0;
+    /** Seconds since banish started, tracked centrally by BanishManager for status broadcasts. */
+    public int elapsedSeconds = 0;
     public int originX, originY, originZ;
     public List<SerializedItem> savedInventory = new ArrayList<>();
 

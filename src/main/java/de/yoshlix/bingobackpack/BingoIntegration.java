@@ -72,6 +72,8 @@ public class BingoIntegration {
             }
             TemporaryItemStateManager.clearForRoundReset(srv);
             de.yoshlix.bingobackpack.item.ChaosHour.onRoundStarted();
+            de.yoshlix.bingobackpack.bounty.BountyManager.getInstance().onRoundStarted();
+            de.yoshlix.bingobackpack.momentum.MomentumManager.getInstance().reset();
             onRoundStarted(srv);
         });
 
@@ -81,6 +83,8 @@ public class BingoIntegration {
                 TemporaryItemStateManager.clearForRoundReset(srv);
             }
             backpackGiven = false;
+            de.yoshlix.bingobackpack.bounty.BountyManager.getInstance().reset();
+            de.yoshlix.bingobackpack.momentum.MomentumManager.getInstance().reset();
             DiscordService.getInstance().onRoundEnd();
         });
 
@@ -90,6 +94,8 @@ public class BingoIntegration {
                 TemporaryItemStateManager.clearForRoundReset(srv);
             }
             backpackGiven = false;
+            de.yoshlix.bingobackpack.bounty.BountyManager.getInstance().reset();
+            de.yoshlix.bingobackpack.momentum.MomentumManager.getInstance().reset();
             onBingoReset();
         });
     }

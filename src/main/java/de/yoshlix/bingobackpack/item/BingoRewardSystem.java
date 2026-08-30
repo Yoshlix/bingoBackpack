@@ -196,6 +196,9 @@ public class BingoRewardSystem {
     private void onRowCompleted(MinecraftServer server, IBingoTeam team) {
         BingoBackpack.LOGGER.info("Team {} completed a row!", team.getId());
 
+        de.yoshlix.bingobackpack.momentum.MomentumManager.getInstance().addCharge(team.getId(),
+                ModConfig.getInstance().momentumChargePerRow);
+
         for (UUID playerId : team.getPlayers()) {
             ServerPlayer player = server.getPlayerList().getPlayer(playerId);
             if (player != null) {
@@ -242,6 +245,9 @@ public class BingoRewardSystem {
      * There's a chance to receive an item based on the task difficulty.
      */
     private void onObjectiveCompleted(MinecraftServer server, IBingoTeam team, ICardEntryView objective) {
+        de.yoshlix.bingobackpack.momentum.MomentumManager.getInstance().addCharge(team.getId(),
+                ModConfig.getInstance().momentumChargePerObjective);
+
         // Random chance to get an item
         if (random.nextDouble() >= ModConfig.getInstance().taskCompleteItemChance) {
             return;

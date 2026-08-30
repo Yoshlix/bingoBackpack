@@ -30,36 +30,78 @@ public class BotController {
     private static final String LINKS_FILE = "discord_links.json";
     private static final String CHANNELS_FILE = "discord_channels.json";
 
-    private GatewayDiscordClient client;
+    private volatile GatewayDiscordClient client;
+    private volatile boolean stopping = false;
     private final Map<UUID, String> playerLinks = new ConcurrentHashMap<>();
     private final AtomicReference<Snowflake> lobbyChannelId = new AtomicReference<>();
     private final Map<String, Snowflake> teamChannelIds = new ConcurrentHashMap<>();
 
-    private ConfigData config;
+    private volatile ConfigData config;
 
     public BotController() {
         loadLinks();
         loadChannels();
     }
 
+    /**
+     * Starts (or re-affirms) the Discord login.
+     *
+     * Two things used to make this unreliable:
+     * 1. It ran the whole login synchronously on the calling HTTP thread,
+     *    which can legitimately take 30+ seconds (initial connect plus up to
+     *    3 retries) — far longer than the mod's 5-second HTTP client
+     *    timeout. The mod would then fire a duplicate /init request while the
+     *    first one was still busy logging in.
+     * 2. It never checked for an existing session, so every repeat call
+     *    (e.g. the Minecraft server restarting while this service keeps
+     *    running) opened a second Gateway connection under the same token
+     *    and silently orphaned the first one instead of reusing/replacing it.
+     *
+     * Now: idempotent (no-op if already connected), and the actual login
+     * happens on a background thread that keeps retrying every 30s until it
+     * succeeds or {@link #stop()} is called — instead of giving up forever
+     * after 3 attempts if Discord/the network hiccups during startup.
+     */
     public void init(ConfigData config) {
         this.config = config;
-        if (config.discordToken != null && !config.discordToken.isEmpty()) {
+        this.stopping = false;
+
+        if (config.discordToken == null || config.discordToken.isEmpty()) {
+            return;
+        }
+        if (this.client != null) {
+            LOGGER.info("Discord bot already logged in, skipping re-init.");
+            return;
+        }
+
+        new Thread(this::loginWithRetry, "discord-login").start();
+    }
+
+    private void loginWithRetry() {
+        while (!stopping && client == null) {
+            ConfigData currentConfig = this.config;
+            if (currentConfig == null || currentConfig.discordToken == null || currentConfig.discordToken.isEmpty()) {
+                return;
+            }
+
             try {
-                DiscordClient discordClient = DiscordClient.create(config.discordToken);
-                this.client = discordClient.login()
+                DiscordClient discordClient = DiscordClient.create(currentConfig.discordToken);
+                GatewayDiscordClient loggedIn = discordClient.login()
                         .timeout(Duration.ofSeconds(30))
                         .retryWhen(Retry.backoff(3, Duration.ofSeconds(2))
                                 .doBeforeRetry(retrySignal -> LOGGER.warn("Retrying Discord login, attempt {}", retrySignal.totalRetries() + 1)))
                         .block();
-                
-                if (this.client == null) {
-                    LOGGER.error("Failed to login to Discord: client is null");
-                    return;
+
+                if (loggedIn == null) {
+                    LOGGER.error("Failed to login to Discord: client is null, retrying in 30s");
+                    sleepQuietly(30_000);
+                    continue;
                 }
-                
+
+                this.client = loggedIn;
+
                 try {
-                    var self = this.client.getSelf().timeout(Duration.ofSeconds(10)).block();
+                    var self = loggedIn.getSelf().timeout(Duration.ofSeconds(10)).block();
                     if (self != null) {
                         LOGGER.info("Discord Bot logged in as {}", self.getUsername());
                     } else {
@@ -69,21 +111,28 @@ public class BotController {
                     LOGGER.warn("Could not retrieve Discord bot username", e);
                 }
 
-                // Initialize Lobby
                 ensureLobbyChannel();
-
-                // Initial Move: If we have no active team channels, move everyone to lobby
                 if (teamChannelIds.isEmpty()) {
                     moveAllToLobby();
                 }
             } catch (Exception e) {
-                LOGGER.error("Failed to login to Discord", e);
+                LOGGER.error("Failed to login to Discord, retrying in 30s", e);
                 this.client = null;
+                sleepQuietly(30_000);
             }
         }
     }
 
+    private void sleepQuietly(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
     public void stop() {
+        stopping = true;
         if (client != null) {
             try {
                 client.logout()

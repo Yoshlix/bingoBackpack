@@ -17,7 +17,6 @@ import java.util.Random;
 
 public class TaskArena implements BanishTask {
 
-    // Which mob type this arena uses (stored per-generation via origin seed)
     private static final EntityType<?>[] MOB_TYPES = {
         EntityTypes.ZOMBIE,
         EntityTypes.SKELETON,
@@ -38,21 +37,13 @@ public class TaskArena implements BanishTask {
 
     @Override
     public Vec3 generate(ServerLevel level, BlockPos origin) {
-        // Clear area
-        TaskUtils.fill(level, origin.offset(-15, -5, -15), origin.offset(15, 10, 15), Blocks.AIR);
-        // Build hollow bedrock box
-        TaskUtils.hollowBox(level, origin.offset(-10, -1, -10), origin.offset(10, 6, 10), Blocks.BEDROCK, Blocks.AIR);
-        // Add light
-        level.setBlock(origin.offset(0, 4, 0), Blocks.GLOWSTONE.defaultBlockState(), 3);
-        level.setBlock(origin.offset(-5, 4, -5), Blocks.GLOWSTONE.defaultBlockState(), 3);
-        level.setBlock(origin.offset(5, 4, -5), Blocks.GLOWSTONE.defaultBlockState(), 3);
-        level.setBlock(origin.offset(-5, 4, 5), Blocks.GLOWSTONE.defaultBlockState(), 3);
-        level.setBlock(origin.offset(5, 4, 5), Blocks.GLOWSTONE.defaultBlockState(), 3);
-        // Additional lighting along walls
-        level.setBlock(origin.offset(0, 4, -5), Blocks.GLOWSTONE.defaultBlockState(), 3);
-        level.setBlock(origin.offset(0, 4, 5), Blocks.GLOWSTONE.defaultBlockState(), 3);
-        level.setBlock(origin.offset(-5, 4, 0), Blocks.GLOWSTONE.defaultBlockState(), 3);
-        level.setBlock(origin.offset(5, 4, 0), Blocks.GLOWSTONE.defaultBlockState(), 3);
+        Random rand = TaskUtils.randomFor(origin);
+
+        if (rand.nextBoolean()) {
+            generateMultiChamber(level, origin, rand);
+        } else {
+            generateOpenPit(level, origin, rand);
+        }
 
         // Place a solid block under origin for the button later
         level.setBlock(origin, Blocks.BEDROCK.defaultBlockState(), 3);
@@ -60,20 +51,80 @@ public class TaskArena implements BanishTask {
         return getSpawnPos(origin);
     }
 
+    private void generateOpenPit(ServerLevel level, BlockPos origin, Random rand) {
+        int size = 8 + rand.nextInt(6); // 8-13, varies the arena size per instance
+
+        TaskUtils.fill(level, origin.offset(-size - 5, -5, -size - 5), origin.offset(size + 5, 10, size + 5), Blocks.AIR);
+        TaskUtils.hollowBox(level, origin.offset(-size, -1, -size), origin.offset(size, 6, size), Blocks.BEDROCK, Blocks.AIR);
+        lightGrid(level, origin, size);
+
+        // Occasional hazard: a lava strip across half the floor - always leaves
+        // the other side clear so it can't accidentally wall the player in.
+        if (rand.nextInt(3) == 0) {
+            int lz = rand.nextInt(size * 2 - 4) - (size - 2);
+            int startX = rand.nextBoolean() ? -size + 2 : 0;
+            TaskUtils.fill(level, origin.offset(startX, 0, lz), origin.offset(startX + size - 3, 0, lz), Blocks.LAVA);
+        }
+    }
+
+    private void generateMultiChamber(ServerLevel level, BlockPos origin, Random rand) {
+        int chambers = 2 + rand.nextInt(2); // 2-3 chambers connected by corridors
+        int chamberSize = 5 + rand.nextInt(3); // 5-7
+        int spacing = chamberSize * 2 + 5;
+
+        TaskUtils.fill(level, origin.offset(-chamberSize - 3, -5, -chamberSize - 3),
+                origin.offset(chamberSize + spacing * (chambers - 1) + 3, 10, chamberSize + 3), Blocks.AIR);
+
+        BlockPos[] centers = new BlockPos[chambers];
+        for (int i = 0; i < chambers; i++) {
+            centers[i] = origin.offset(spacing * i, 0, 0);
+            TaskUtils.hollowBox(level, centers[i].offset(-chamberSize, -1, -chamberSize),
+                    centers[i].offset(chamberSize, 6, chamberSize), Blocks.BEDROCK, Blocks.AIR);
+            lightGrid(level, centers[i], chamberSize);
+        }
+
+        // Corridors carved after every chamber's walls exist, so they don't
+        // get resealed by the next chamber's hollowBox call.
+        for (int i = 0; i < chambers - 1; i++) {
+            BlockPos a = centers[i];
+            BlockPos b = centers[i + 1];
+            TaskUtils.fill(level, a.offset(chamberSize, 0, -1), b.offset(-chamberSize, 3, 1), Blocks.AIR);
+            TaskUtils.fill(level, a.offset(chamberSize, -1, -1), b.offset(-chamberSize, -1, 1), Blocks.BEDROCK);
+        }
+    }
+
+    private void lightGrid(ServerLevel level, BlockPos center, int size) {
+        int half = Math.max(1, size / 2);
+        level.setBlock(center.offset(0, 4, 0), Blocks.GLOWSTONE.defaultBlockState(), 3);
+        level.setBlock(center.offset(-half, 4, -half), Blocks.GLOWSTONE.defaultBlockState(), 3);
+        level.setBlock(center.offset(half, 4, -half), Blocks.GLOWSTONE.defaultBlockState(), 3);
+        level.setBlock(center.offset(-half, 4, half), Blocks.GLOWSTONE.defaultBlockState(), 3);
+        level.setBlock(center.offset(half, 4, half), Blocks.GLOWSTONE.defaultBlockState(), 3);
+    }
+
     @Override
     public boolean isWinCondition(ServerLevel level, BlockPos interactedBlock, BlockPos origin) {
         return level.getBlockState(interactedBlock).is(Blocks.POLISHED_BLACKSTONE_BUTTON) && interactedBlock.distSqr(origin) < 400;
     }
 
-    private int getMobTypeIndex(BlockPos origin) {
-        return Math.abs(new Random(origin.asLong()).nextInt()) % MOB_TYPES.length;
+    /**
+     * Deterministic from origin alone (no persisted state), same convention
+     * as the original: {@code [primaryIndex, secondaryIndex or -1]}. About a
+     * third of instances mix two mob types instead of one.
+     */
+    private int[] mobComposition(BlockPos origin) {
+        Random r = new Random(origin.asLong());
+        int primary = Math.abs(r.nextInt()) % MOB_TYPES.length;
+        boolean mixed = r.nextInt(3) == 0;
+        int secondary = mixed ? Math.abs(r.nextInt()) % MOB_TYPES.length : -1;
+        return new int[]{primary, secondary};
     }
 
     @Override
     public void tick(ServerPlayer player, BlockPos origin) {
         BanishData data = BanishManager.getInstance().getBanishData(player);
         if (data == null) return;
-        
+
         data.taskTime++; // incremented once per second
         ServerLevel level = (ServerLevel) player.level();
 
@@ -81,49 +132,60 @@ public class TaskArena implements BanishTask {
         // However, fighting doesn't drain enough exhaustion in 3 mins.
         // We artificially give them exhaustion so they *have* to eat the steak!
         if (data.taskTime > 2 && data.taskTime % 2 == 0) { // every 2 seconds
-            // 0.5 per second -> ~22.5 food points over 3 mins
             player.causeFoodExhaustion(1.0f);
         }
-        
+
+        int[] composition = mobComposition(origin);
+        EntityType<?> primaryType = MOB_TYPES[composition[0]];
+        EntityType<?> secondaryType = composition[1] >= 0 ? MOB_TYPES[composition[1]] : null;
+
         // Give gear and spawn mobs after 2 seconds
         if (data.taskTime == 2) {
             giveArenaGear(player);
 
-            int mobIndex = getMobTypeIndex(origin);
-            EntityType<?> mobType = MOB_TYPES[mobIndex];
-            String mobName = MOB_NAMES[mobIndex];
-            int count = (mobType == EntityTypes.CAVE_SPIDER) ? 15 : 10;
-
-            for (int i = 0; i < count; i++) {
-                BlockPos spawnPos = new BlockPos(
-                    (int)(origin.getX() - 5 + Math.random() * 10),
-                    origin.getY() + 1,
-                    (int)(origin.getZ() - 5 + Math.random() * 10)
-                );
-                mobType.spawn(level, spawnPos, net.minecraft.world.entity.EntitySpawnReason.COMMAND);
+            int primaryCount = (primaryType == EntityTypes.CAVE_SPIDER) ? 15 : 10;
+            if (secondaryType != null) {
+                primaryCount = primaryCount / 2 + 1;
             }
-            player.sendSystemMessage(Component.literal("§e" + count + " " + mobName + " spawnen! Besiege sie alle!"));
+            spawnMobs(level, origin, primaryType, primaryCount);
+
+            StringBuilder message = new StringBuilder(String.valueOf(primaryCount)).append(" ").append(MOB_NAMES[composition[0]]);
+            if (secondaryType != null) {
+                int secondaryCount = (secondaryType == EntityTypes.CAVE_SPIDER) ? 8 : 5;
+                spawnMobs(level, origin, secondaryType, secondaryCount);
+                message.append(" und ").append(secondaryCount).append(" ").append(MOB_NAMES[composition[1]]);
+            }
+            player.sendSystemMessage(Component.literal("§e" + message + " spawnen! Besiege sie alle!"));
         }
-        
+
         // Check win condition: button appears after 180 seconds (3 min) OR all mobs dead
         boolean giveButton = false;
         if (data.taskTime > 180) {
             giveButton = true;
         } else if (data.taskTime > 5 && data.taskTime % 2 == 0) {
-            int mobIndex = getMobTypeIndex(origin);
-            EntityType<?> mobType = MOB_TYPES[mobIndex];
             long mobCount = level.getEntitiesOfClass(
-                LivingEntity.class,
-                player.getBoundingBox().inflate(15)
-            ).stream().filter(e -> e.getType() == mobType).count();
+                    LivingEntity.class,
+                    player.getBoundingBox().inflate(20)
+            ).stream().filter(e -> e.getType() == primaryType || e.getType() == secondaryType).count();
             if (mobCount == 0) {
                 giveButton = true;
             }
         }
-        
+
         if (giveButton && !level.getBlockState(origin.above()).is(Blocks.POLISHED_BLACKSTONE_BUTTON)) {
             level.setBlock(origin.above(), Blocks.POLISHED_BLACKSTONE_BUTTON.defaultBlockState(), 3);
             player.sendSystemMessage(Component.literal("§aGeschafft! Der Flucht-Button ist in der Mitte!"));
+        }
+    }
+
+    private void spawnMobs(ServerLevel level, BlockPos origin, EntityType<?> mobType, int count) {
+        for (int i = 0; i < count; i++) {
+            BlockPos spawnPos = new BlockPos(
+                    (int) (origin.getX() - 5 + Math.random() * 10),
+                    origin.getY() + 1,
+                    (int) (origin.getZ() - 5 + Math.random() * 10)
+            );
+            mobType.spawn(level, spawnPos, net.minecraft.world.entity.EntitySpawnReason.COMMAND);
         }
     }
 

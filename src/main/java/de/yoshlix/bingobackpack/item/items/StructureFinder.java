@@ -40,6 +40,18 @@ public class StructureFinder extends BingoItem {
 
     @Override
     public boolean onUse(ServerPlayer player) {
+        return locateNearestStructure(player);
+    }
+
+    /**
+     * Finds and messages the player about the nearest known structure.
+     * Extracted from {@link #onUse} so it can be reused by the Momentum
+     * "Spürsinn" ability, which repeats this same search automatically for a
+     * team over time instead of a one-shot item use.
+     *
+     * @return true if a structure was found (and, when called as the item, should be consumed)
+     */
+    public static boolean locateNearestStructure(ServerPlayer player) {
         if (!(player.level() instanceof ServerLevel level)) {
             return false;
         }
@@ -95,7 +107,7 @@ public class StructureFinder extends BingoItem {
         }
     }
 
-    private String getStructureName(TagKey<Structure> tag) {
+    private static String getStructureName(TagKey<Structure> tag) {
         if (tag == StructureTags.VILLAGE)
             return "Dorf";
         if (tag == StructureTags.MINESHAFT)

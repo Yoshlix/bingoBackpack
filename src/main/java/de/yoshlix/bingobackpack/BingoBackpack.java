@@ -64,6 +64,8 @@ public class BingoBackpack implements ModInitializer {
 			SpawnManager.getInstance().init(server);
 			de.yoshlix.bingobackpack.banish.BanishManager.getInstance().init(server);
 			BingoRewardSystem.getInstance().init(server);
+			de.yoshlix.bingobackpack.bounty.BountyManager.getInstance().init(server);
+			de.yoshlix.bingobackpack.momentum.MomentumManager.getInstance().init(server);
 			DiscordService.getInstance().init(server);
 			LOGGER.info("BingoBackpack initialized!");
 		});
@@ -103,6 +105,12 @@ public class BingoBackpack implements ModInitializer {
 
 			// Chaos-Stunde scheduling
 			de.yoshlix.bingobackpack.item.ChaosHour.tick(server);
+
+			// Bounty-Board rotation/progress checks
+			de.yoshlix.bingobackpack.bounty.BountyManager.getInstance().tick(server);
+
+			// Momentum ability upkeep (e.g. Spürsinn's repeat pings)
+			de.yoshlix.bingobackpack.momentum.MomentumManager.getInstance().tick(server);
 		});
 	}
 }

@@ -116,6 +116,27 @@ public class ModConfig {
     public int chaosHourDurationMinutes = 5;
     public double chaosHourDropMultiplier = 2.0;
 
+    // Banish: periodic server-wide status broadcast while a player is stuck
+    // in a banish task, so the rest of the server can see who's held up.
+    public boolean banishStatusBroadcastEnabled = true;
+    public int banishStatusBroadcastIntervalSeconds = 30;
+
+    // Bounty-Board: rotating world objectives, earned (not RNG-scaled) rewards.
+    public boolean bountyBoardEnabled = true;
+    public int bountyRotationMinutes = 10;
+
+    // Momentum-Leiste: team meter charged by kills/objectives/rows/banish
+    // escapes, unlocks one earned team ability (bonus or harmful) at 100%.
+    public double momentumChargePerKill = 0.5;
+    public double momentumChargePerObjective = 8.0;
+    public double momentumChargePerRow = 25.0;
+    public double momentumChargePerBanishEscape = 15.0;
+    public int momentumAnsturmDurationSeconds = 180;
+    public int momentumBollwerkDurationSeconds = 300;
+    public int momentumSpuersinnDurationSeconds = 300;
+    public int momentumVerdunkelungDurationSeconds = 60;
+    public int momentumStillstandDurationSeconds = 20;
+
     // Discord Integration
     public boolean discordEnabled = false;
     public String discordToken = "";

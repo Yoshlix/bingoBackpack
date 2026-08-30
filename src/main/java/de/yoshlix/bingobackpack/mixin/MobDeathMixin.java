@@ -24,6 +24,8 @@ public class MobDeathMixin {
         if (damageSource.getEntity() instanceof Player player) {
             // Trigger the drop check
             BingoItemManager.getInstance().onMobKilled(self, player);
+            de.yoshlix.bingobackpack.bounty.BountyManager.getInstance().onMobKilled(self, player);
+            de.yoshlix.bingobackpack.momentum.MomentumManager.getInstance().onMobKilled(self, player);
         }
     }
 }
